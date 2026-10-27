@@ -1,0 +1,13 @@
+Create ONLY 8-frame RUN animation of this exact robot. Reference identifies character, DO NOT copy its leg motion. 4 columns x2 rows chronological. Transparent. Full separate sprites, consistent pixel-art robot offwhite helmet navy armor cyan visor red cloth sword pointing behind, always faces RIGHT.
+MOST IMPORTANT: near-camera RIGHT leg has clearly LIGHT STEEL shin/knee armor. Far LEFT leg is DARK NAVY. The LIGHT leg must visibly swing BACKWARD in frames 3,4,5,6 and FORWARD in frames7,8,1,2. Dark leg does the opposite. This is NOT eight variations with light leg always forward.
+1 LIGHT right leg straight forward to screen RIGHT, DARK left leg extended back to screen LEFT.
+2 LIGHT right foot planted below hips, DARK left heel lifts behind.
+3 LIGHT right leg extends back to screen LEFT, DARK left knee crosses forward to screen RIGHT.
+4 LIGHT right knee bent BEHIND body left, DARK left leg reaches forward right.
+5 LIGHT right leg extends fully BACK to screen LEFT, DARK left leg extends fully FORWARD to screen RIGHT. INVERSE OF FRAME1. Clearly show light shin and foot behind torso on left.
+6 LIGHT right heel rises BEHIND on left, DARK left foot planted beneath hips.
+7 LIGHT right knee swings FORWARD on right, DARK left leg pushes back left.
+8 LIGHT right leg reaches FORWARD right, DARK left knee bent BEHIND left.
+Near LIGHT leg always drawn in front of far DARK leg where overlapping even when it extends to the left. Torso remains facing right in all frames, do NOT mirror character. Exaggerate long readable opposing strides. Keep armor details same throughout. Exactly eight poses with broad transparent spaces. No text or ground.
+
+Generated with built-in image_gen; reference: Assets/Art/Characters/Player/Source/Hero-Spritesheet-v3-DRAFT.png. Packed with user-authorized Pillow processing in Tools/Art/pack_run_v6.py.

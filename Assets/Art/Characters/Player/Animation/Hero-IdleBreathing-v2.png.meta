@@ -1,0 +1,474 @@
+fileFormatVersion: 2
+guid: e92fe783fafbd704782a46c27fa4b579
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: -8439306478976910786
+    second: Hero-IdleBreathing-v2_0
+  - first:
+      213: -7881670708252730698
+    second: Hero-IdleBreathing-v2_1
+  - first:
+      213: -5922534926493160218
+    second: Hero-IdleBreathing-v2_2
+  - first:
+      213: 7284877735356618839
+    second: Hero-IdleBreathing-v2_3
+  - first:
+      213: 9092277467712143769
+    second: Hero-IdleBreathing-v2_4
+  - first:
+      213: 16091387785320291
+    second: Hero-IdleBreathing-v2_5
+  - first:
+      213: -596637977096747840
+    second: Hero-IdleBreathing-v2_6
+  - first:
+      213: -1173546279990969711
+    second: Hero-IdleBreathing-v2_7
+  - first:
+      213: 4436471846485080060
+    second: Hero-IdleBreathing-v2_8
+  - first:
+      213: 4749019328438997706
+    second: Hero-IdleBreathing-v2_9
+  - first:
+      213: -2745277576794401064
+    second: Hero-IdleBreathing-v2_10
+  - first:
+      213: -5737459731222981642
+    second: Hero-IdleBreathing-v2_11
+  - first:
+      213: 5498564830474839539
+    second: Hero-IdleBreathing-v2_12
+  - first:
+      213: -1207565650873206915
+    second: Hero-IdleBreathing-v2_13
+  - first:
+      213: 1880343668908470182
+    second: Hero-IdleBreathing-v2_14
+  - first:
+      213: -7850888706225914859
+    second: Hero-IdleBreathing-v2_15
+  - first:
+      213: 3381792184733418862
+    second: Hero-IdleBreathing-v2_16
+  - first:
+      213: -99318186570716806
+    second: Hero-IdleBreathing-v2_17
+  - first:
+      213: 7322175186362508705
+    second: Hero-IdleBreathing-v2_18
+  - first:
+      213: -2004787431065638848
+    second: Hero-IdleBreathing-v2_19
+  - first:
+      213: -7719235291450805897
+    second: Hero-IdleBreathing-v2_20
+  - first:
+      213: 626633865676403534
+    second: Hero-IdleBreathing-v2_21
+  - first:
+      213: 286669468644441321
+    second: Hero-IdleBreathing-v2_22
+  - first:
+      213: -8466119193889797326
+    second: Hero-IdleBreathing-v2_23
+  - first:
+      213: -3482583757389091469
+    second: Hero-IdleBreathing-v2_24
+  - first:
+      213: -7524718218089707846
+    second: Hero-IdleBreathing-v2_25
+  - first:
+      213: -3797699359405805349
+    second: Hero-IdleBreathing-v2_26
+  - first:
+      213: -388168605507913451
+    second: Hero-IdleBreathing-v2_27
+  - first:
+      213: 513415745881895152
+    second: Hero-IdleBreathing-v2_28
+  - first:
+      213: -5764604637194606259
+    second: Hero-IdleBreathing-v2_29
+  - first:
+      213: 2498853402739215243
+    second: Hero-IdleBreathing-v2_30
+  - first:
+      213: -6274368815309199538
+    second: Hero-IdleBreathing-v2_31
+  - first:
+      213: 3988179731889419839
+    second: Hero-IdleBreathing-v2_32
+  - first:
+      213: 8822509123075064457
+    second: Hero-IdleBreathing-v2_33
+  - first:
+      213: 5611061691542932808
+    second: Hero-IdleBreathing-v2_34
+  - first:
+      213: 8490853861388930528
+    second: Hero-IdleBreathing-v2_35
+  - first:
+      213: -1274428609359509092
+    second: Hero-IdleBreathing-v2_36
+  - first:
+      213: -4011641528041830384
+    second: Hero-IdleBreathing-v2_37
+  - first:
+      213: 4863303771423870888
+    second: Hero-IdleBreathing-v2_38
+  - first:
+      213: -1892045826648024461
+    second: Hero-IdleBreathing-v2_39
+  - first:
+      213: 5409386074011460969
+    second: Hero-IdleBreathing-v2_40
+  - first:
+      213: 4321078160896454145
+    second: Hero-IdleBreathing-v2_41
+  - first:
+      213: -9105637846651997747
+    second: Hero-IdleBreathing-v2_42
+  - first:
+      213: -8246267816268417209
+    second: Hero-IdleBreathing-v2_43
+  - first:
+      213: 7064805496315365304
+    second: Hero-IdleBreathing-v2_44
+  - first:
+      213: -6120913473026133623
+    second: Hero-IdleBreathing-v2_45
+  - first:
+      213: 7674848393028900526
+    second: Hero-IdleBreathing-v2_46
+  - first:
+      213: -5599803036047664313
+    second: Hero-IdleBreathing-v2_47
+  - first:
+      213: 5749788848559258102
+    second: Hero-IdleBreathing-v2_48
+  - first:
+      213: 8472794398825974129
+    second: Hero-IdleBreathing-v2_49
+  - first:
+      213: -6950788351909584827
+    second: Hero-IdleBreathing-v2_50
+  - first:
+      213: 8909744502961532337
+    second: Hero-IdleBreathing-v2_51
+  - first:
+      213: -7035290185309055904
+    second: Hero-IdleBreathing-v2_52
+  - first:
+      213: -1377082955702822324
+    second: Hero-IdleBreathing-v2_53
+  - first:
+      213: 3866685322710845665
+    second: Hero-IdleBreathing-v2_54
+  - first:
+      213: 3940225220153999475
+    second: Hero-IdleBreathing-v2_55
+  - first:
+      213: -7783656284619570818
+    second: Hero-IdleBreathing-v2_56
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 0
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 0
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 252.17392
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationMethod: 0
+  spriteTessellationDetail: -1
+  spriteGeometrySubdivision: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 0
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Hero_IdleBreath_00
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 433
+        width: 444
+        height: 294
+      alignment: 9
+      pivot: {x: 0.41869858, y: 0.14125259}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e2e982e7c4d2ce84ea4b1d8a529cbf35
+      internalID: -1902650391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_01
+      rect:
+        serializedVersion: 2
+        x: 444
+        y: 433
+        width: 443
+        height: 298
+      alignment: 9
+      pivot: {x: 0.4207724, y: 0.13935658}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 00458062eed532f4b892fdcf3d493268
+      internalID: -2123853142
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_02
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 433
+        width: 443
+        height: 299
+      alignment: 9
+      pivot: {x: 0.42302972, y: 0.13889052}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c85a17b7bdbb46d459ca9918cadb8fe5
+      internalID: 676832026
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_03
+      rect:
+        serializedVersion: 2
+        x: 1330
+        y: 433
+        width: 444
+        height: 314
+      alignment: 9
+      pivot: {x: 0.42545533, y: 0.13225561}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: e5b9b0d12e05bd04d9e2352322b80659
+      internalID: -1976591081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_04
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 27
+        width: 444
+        height: 313
+      alignment: 9
+      pivot: {x: 0.42207697, y: 0.13267817}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 845dfcc6934ed9b4f8582e819e6e4d7c
+      internalID: 934976195
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_05
+      rect:
+        serializedVersion: 2
+        x: 444
+        y: 27
+        width: 443
+        height: 301
+      alignment: 9
+      pivot: {x: 0.41964373, y: 0.13796766}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: f7d746f19cc41ec428a8fb77524a89e8
+      internalID: -932192875
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_06
+      rect:
+        serializedVersion: 2
+        x: 887
+        y: 27
+        width: 443
+        height: 296
+      alignment: 9
+      pivot: {x: 0.4207724, y: 0.14029819}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c151618e8f1c3514985c72e6a6fe16d4
+      internalID: -505725885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Hero_IdleBreath_07
+      rect:
+        serializedVersion: 2
+        x: 1330
+        y: 27
+        width: 444
+        height: 294
+      alignment: 9
+      pivot: {x: 0.42095083, y: 0.14125259}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 53dc05f6293cce74c862501307df7083
+      internalID: 1304265535
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 308de48a924b57145810f12a959206d8
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Hero_IdleBreath_00: -1902650391
+      Hero_IdleBreath_01: -2123853142
+      Hero_IdleBreath_02: 676832026
+      Hero_IdleBreath_03: -1976591081
+      Hero_IdleBreath_04: 934976195
+      Hero_IdleBreath_05: -932192875
+      Hero_IdleBreath_06: -505725885
+      Hero_IdleBreath_07: 1304265535
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

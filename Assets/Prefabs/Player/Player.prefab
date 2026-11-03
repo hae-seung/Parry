@@ -104,10 +104,14 @@ GameObject:
   - component: {fileID: 5744965556235988717}
   - component: {fileID: 5877526893639182189}
   - component: {fileID: 3729731391740877115}
-  - component: {fileID: 2536336535114238382}
-  - component: {fileID: 7217727290676639249}
   - component: {fileID: 2598295130341800817}
   - component: {fileID: 6711962659851543641}
+  - component: {fileID: 3863320199812245518}
+  - component: {fileID: 3863320199812245519}
+  - component: {fileID: 2536336535114238382}
+  - component: {fileID: 3863320199812245517}
+  - component: {fileID: 7217727290676639249}
+  - component: {fileID: 3223051112556595818}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -223,7 +227,7 @@ MonoBehaviour:
   - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2536336535114238382}
-        m_TargetAssemblyTypeName: Parry.Player.PlayerController, Assembly-CSharp
+        m_TargetAssemblyTypeName: Parry.PlayerClass.MyController, Assembly-CSharp
         m_MethodName: OnMove
         m_Mode: 0
         m_Arguments:
@@ -242,8 +246,8 @@ MonoBehaviour:
     m_ActionName: 'Player/Look[/Mouse/delta]'
   - m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 7217727290676639249}
-        m_TargetAssemblyTypeName: Parry.Player.PlayerAttack, Assembly-CSharp
+      - m_Target: {fileID: 2536336535114238382}
+        m_TargetAssemblyTypeName: Parry.PlayerClass.MyController, Assembly-CSharp
         m_MethodName: OnAttack
         m_Mode: 0
         m_Arguments:
@@ -261,13 +265,9 @@ MonoBehaviour:
     m_ActionId: 852140f2-7766-474d-8707-702459ba45f3
     m_ActionName: 'Player/Interact[/Keyboard/e]'
   - m_PersistentCalls:
-      m_Calls: []
-    m_ActionId: 27c5f898-bc57-4ee1-8800-db469aca5fe3
-    m_ActionName: 'Player/Crouch[/Keyboard/c]'
-  - m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 2536336535114238382}
-        m_TargetAssemblyTypeName: Parry.Player.PlayerController, Assembly-CSharp
+        m_TargetAssemblyTypeName: Parry.PlayerClass.MyController, Assembly-CSharp
         m_MethodName: OnJump
         m_Mode: 0
         m_Arguments:
@@ -281,17 +281,21 @@ MonoBehaviour:
     m_ActionId: f1ba0d36-48eb-4cd5-b651-1c94a6531f70
     m_ActionName: 'Player/Jump[/Keyboard/space]'
   - m_PersistentCalls:
-      m_Calls: []
-    m_ActionId: 2776c80d-3c14-4091-8c56-d04ced07a2b0
-    m_ActionName: 'Player/Previous[/Keyboard/1]'
-  - m_PersistentCalls:
-      m_Calls: []
-    m_ActionId: b7230bb6-fc9b-4f52-8b25-f5e19cb2c2ba
-    m_ActionName: 'Player/Next[/Keyboard/2]'
-  - m_PersistentCalls:
-      m_Calls: []
-    m_ActionId: 641cd816-40e6-41b4-8c3d-04687c349290
-    m_ActionName: 'Player/Sprint[/Keyboard/leftShift]'
+      m_Calls:
+      - m_Target: {fileID: 2536336535114238382}
+        m_TargetAssemblyTypeName: Parry.PlayerClass.MyController, Assembly-CSharp
+        m_MethodName: OnRoll
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: 840ea56b-4e37-4f07-8540-0b56131763c8
+    m_ActionName: 'Player/Roll[/Keyboard/z]'
   - m_PersistentCalls:
       m_Calls: []
     m_ActionId: c95b2375-e6d9-4b88-9c4c-c5e76515df4b
@@ -332,66 +336,27 @@ MonoBehaviour:
       m_Calls: []
     m_ActionId: 9caa3d8a-6b2f-4e8e-8bad-6ede561bd9be
     m_ActionName: UI/TrackedDeviceOrientation
+  - m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 2536336535114238382}
+        m_TargetAssemblyTypeName: Parry.PlayerClass.MyController, Assembly-CSharp
+        m_MethodName: OnParry
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+    m_ActionId: dee0dbe8-a4d5-4f1f-b8f4-6ca2d80081da
+    m_ActionName: 'Player/Parry[/Keyboard/space]'
   m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: Keyboard&Mouse
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
---- !u!114 &2536336535114238382
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8352126505682791269}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 203523e880381474eb633e785c8f91e5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Parry.Player.PlayerController
-  moveSpeed: 6
-  jumpSpeed: 12
-  groundCheckDistance: 0.06
-  groundLayers:
-    serializedVersion: 2
-    m_Bits: 1
---- !u!114 &7217727290676639249
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8352126505682791269}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5e9f3dd70ca577940a7b91aa4b7d19ee, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Parry.Player.PlayerAttack
-  firstAttack:
-    damage: 20
-    windupDuration: 0.12
-    activeDuration: 0.1
-    recoveryDuration: 0.25
-    hitboxOffset: {x: 0.9, y: 0}
-    hitboxSize: {x: 1.2, y: 1.1}
-  secondAttack:
-    damage: 20
-    windupDuration: 0.12
-    activeDuration: 0.1
-    recoveryDuration: 0.25
-    hitboxOffset: {x: 0.9, y: 0}
-    hitboxSize: {x: 1.2, y: 1.1}
-  thirdAttack:
-    damage: 35
-    windupDuration: 0.18
-    activeDuration: 0.12
-    recoveryDuration: 0.4
-    hitboxOffset: {x: 0.9, y: 0}
-    hitboxSize: {x: 1.2, y: 1.1}
-  targetLayers:
-    serializedVersion: 2
-    m_Bits: 256
-  attackVisual: {fileID: 2817183538530047236}
 --- !u!95 &2598295130341800817
 Animator:
   serializedVersion: 7
@@ -474,3 +439,92 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
+--- !u!114 &3863320199812245518
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fd97dc2ff2d3405689387fff6244555d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerCharacter
+  rollCooldown: 0.12
+--- !u!114 &2536336535114238382
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16dd1802474f4da788e07e07893e08ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.MyController
+--- !u!114 &3863320199812245517
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8aec2e839d6b46638d84abd6fd2fc8cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerMovement
+  moveSpeed: 6
+  jumpSpeed: 12
+  groundCheckDistance: 0.06
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  rollSpeed: 10
+--- !u!114 &7217727290676639249
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5e9f3dd70ca577940a7b91aa4b7d19ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.Player.PlayerAttack
+  attacks:
+  - {fileID: 11400000, guid: 9e75bae284cc464186624341ce2c8c1e, type: 2}
+  - {fileID: 11400000, guid: 9ff1f01ea4594667a9a2c5b118ab9e18, type: 2}
+  - {fileID: 11400000, guid: 52b073703bfc4583bf0cd19f2882c7ec, type: 2}
+  comboResetDuration: 1
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 256
+--- !u!114 &3223051112556595818
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1922f3f88de8a504baa8dc3191c39f6d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerAnimation
+--- !u!114 &3863320199812245519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34b44d3c5bd34c61b4a5df3a78e5c740, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerStatComponent
+  maxHp: 100

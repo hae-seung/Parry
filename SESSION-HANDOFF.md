@@ -1,10 +1,45 @@
 # Parry 개발 세션 인계
 
-갱신: 2026-10-28 (Asia/Seoul). 프로젝트: `D:\GitHub\Parry`.
+갱신: 2026-11-04 (Asia/Seoul). 프로젝트: `D:\GitHub\Parry`.
 
 이 문서는 새 세션에서 대화를 이어가기 위한 현재 상태 기록이다. **지금 당장 구현을 시작하라는 지시는 아니다.** 사용자의 다음 요청 범위를 확인하고 실제 파일을 다시 읽어 진행한다.
 
-## 1. 가장 최근 작업과 현재 상태
+## 현재 구현 — 2026-11-04 우선 읽기
+
+아래의 1~12절은 10월 28일 기준의 이력이다. 현재 코드·입력·Animator와 충돌하는 경우 이 절과 실제 파일을 우선한다. 이 문서를 읽는 것만으로 다음 구현 범위가 정해지지는 않는다.
+
+### 플레이어 구성과 입력
+
+- 경로는 `Assets/Scripts/Player`. Player 프리팹에 `PlayerInput`, `MyController`, `PlayerCharacter`, `PlayerMovement`, `PlayerAttack`, `PlayerAnimation`, `PlayerStatComponent`가 있다.
+- `MyController : PlayerController`가 Input System 콜백을 받는다. 부모 컨트롤러가 캐싱한 `Character`에 Move/Jump/Roll/Parry/Attack을 전달한다. `PlayerCharacter`는 행동 가능 여부와 구르기·패링 상태를 관리한다. 체력이나 물리 계산은 각 컴포넌트에 둔다.
+- `PlayerMovement`는 Rigidbody2D, CapsuleCollider2D.Cast 접지 검사, 수평 이동, 점프, 구르기 속도, 스프라이트 방향을 담당한다. `PlayerAnimation`은 Rigidbody2D 대신 `character.Velocity → movement.Velocity`를 읽는다. 현재 플레이어 스프라이트 렌더러와 클립 바인딩은 루트 기준이다. 옛 기록의 Body 자식 바인딩을 그대로 가정하지 않는다.
+- **입력 에셋/프리팹 이벤트는 사용자가 직접 설정한다.** 현재 액션 에셋 기준 좌클릭 공격, Alt 점프, Z 구르기, Space 패링. 프리팹에 `OnParry` 연결이 있다. 일부 프리팹 `m_ActionName` 표시에는 예전 키 이름이 남아 있으므로 실제 키는 액션 에셋 바인딩을 기준으로 본다.
+
+### Animator와 행동
+
+- `Assets/Animations/Player/PlayerAnimController.controller`의 Base Layer에 `PlayerMove`(Idle/Run)와 `Jump`(Jump/Fall/Landing) 하위 상태 머신이 있다. 공중 그룹을 만들 당시 이름은 Airborne이었다. 지상 상태에서 상승/낙하 조건에 따라 내부 상태로 직접 진입한다. 발판에서 떨어질 때는 Fall로 바로 들어간다.
+- `PlayerAnimation.Update()`는 Speed(수평 속도 절댓값), VerticalSpeed, IsGround, IsRolling, IsParrying, IsDead를 갱신한다. **캐릭터의 Bool을 필드에 읽어 그대로 전달한다.** Animator 어댑터에서 사망 여부와 행동 상태를 조합해 다시 판단하지 않는다. 사망 중 Roll/Parry 진입 차단 조건은 Animator 전환에 있다.
+- 구르기는 지상에서만 시작 가능하며 공격 모션·패링·기존 구르기·쿨다운 중에는 금지한다. 프리팹의 현재 rollSpeed는 10, rollCooldown은 0.12초. 현재 구현은 구르는 동안 FixedUpdate마다 수평 속도를 적용한다. 발판을 벗어나도 구르기를 끝까지 재생하고, 끝났을 때 공중이면 Fall로 전환한다. `PlayerRollState.OnStateExit()`가 상태를 끄고 쿨다운을 시작한다.
+- 착지 순간 Z에서 미끄러지던 원인은 물리 접지가 먼저 갱신되어 구르기가 수락됐지만 Animator가 아직 Fall에 있었고, 기존 진입 경로가 Idle/Run에만 있었기 때문이다. **현재는 Any State → Roll을 사용한다.** 예전 LateUpdate 트리거 리셋은 이미 제거됐다. 구르기 종료 후 낙하 중 방향키 이동을 막는 실험도 사용자의 요청으로 되돌렸다.
+- 패링은 공중에서도 가능하고 구르기 중과 이미 패링 중에는 시작할 수 없다. 공격 도중에는 공격을 취소한다. `IsParrying` Bool로 Any State → Parry, `PlayerParryState.OnStateExit()`로 종료한다. 지상 패링 중 좌우 이동은 다시 허용했다. 점프와 구르기는 패링 중 금지한다. 공중 패링 시 수직 물리는 그대로 진행한다. **실제 패링 판정, 반격, 쿨다운은 미구현**이다. 판정 타이밍의 Animation Event는 사용자가 나중에 넣을 예정이다.
+- `PlayerStatComponent`의 임시 최대 HP는 100. `TakeDamage(float)`가 HP를 줄이고 `IsDead => Hp <= 0`을 제공한다. `PlayerCharacter.IsDead`는 그 값을 직접 읽는다. Animator는 Any State → Death로 들어가 비반복 클립을 한 번 재생한다. 사망 중 수평 이동·점프·공격·구르기·패링을 막되 공중이라면 중력은 적용된다.
+- 테스트 방법: Play 모드에서 Player의 `PlayerStatComponent` 메뉴 **Take Damage (10)**을 실행하면 피해 10이 들어간다. 몬스터 공격과 플레이어 피해는 아직 연결되지 않았다.
+
+### 공격과 남은 작업
+
+- 공격은 `PlayerAttackData` ScriptableObject 3개를 순서대로 List에 연결했다. 데이터에는 피해량, 판정 오프셋·크기, Animator 상태 경로가 있다. 기존 20/20/35를 사용하며 데이터는 `Assets/Data/Player/Attacks`에 있다. 공격 재생은 현재 `PlayerAttack`이 `Animator.Play`로 한다.
+- 각 공격 시도 시 시간을 저장한다. 다음 입력까지 1초 이상이면 1타. 그 전에는 직전 공격 적중 시 다음 인덱스로 진행하고, 빗나가면 1타다. 3타 다음은 1타. 판정 이벤트 전 추가 입력은 예약하지 않는다.
+- 준비·타격·회복 타이머와 종료 이벤트는 제거했다. **`ApplyAttackHit()`는 Animation Event 순간에 한 번만 OverlapBox를 검사하고, 같은 타격에 같은 적을 중복 피해 처리하지 않는다.** 오프셋에 hitboxSize를 잘못 쓰던 문제는 수정했다. 현재 세 공격 클립 파일의 이벤트 목록은 비어 있으므로, 실제 적중과 콤보를 테스트하려면 사용자 지정 시점에 이벤트를 붙여야 한다.
+- 공격·패링·사망의 최종 재생과 전투 수치, 몬스터 공격 AI, 스태미나·구르기 무적, 피격 경직·무적, 저장·진행 등은 아직 작업이 필요하다. 공중 일반 공격은 기획상 삭제된 상태다.
+
+### 검증과 Editor 작업
+
+- 수정 전 Play 모드에서 방향 입력 없이 발판 끝 제자리 점프 → 첫 착지 순간 구르기를 재현했다. Roll 재생이 아래층 착지 이후로 밀려 추가 8유닛 전진했다. Any State 수정 후 같은 시험에서 공중 Roll 속도 10, 정상 종료, 아래층 착지 후 추가 이동 0유닛, Roll 재진입 없음. 테스트는 실제 Player 프리팹 복제본과 물리·Animator를 사용하고 행동 요청 메서드를 호출했다.
+- 테스트용 Player 복제본의 PlayerInput이 원본과 키보드/마우스를 공유하려고 하면서 경고를 냈다. 이후 비활성 부모 밑에서 복제하고 PlayerInput을 끈 뒤 활성화하여 경고·오류 0건으로 재검증했다. 당시 Play 모드를 종료하고 백그라운드 설정도 원복했다.
+- 최신 구조 분리와 사망 Bool 연결은 로컬 C# 컴파일을 통과했다. 이후 테스트 메뉴까지 포함한 최신 플레이어 전체 흐름과 실제 Death 전환은 Play 모드에서 아직 검증하지 않았다.
+- 샌드박스에서 CLI가 Editor 검색 파일을 못 읽어 `STATUS_DESCRIPTOR_UNREADABLE`가 나온 적이 있다. 승인된 프로젝트 대상 호출로 포트 37800 Editor에 연결했다. Play 전환 직후에는 Pipeline이 잠시 끊길 수 있어 `unity status --until-ready --timeout 20 --project-path D:/GitHub/Parry`로 대기한다. `Temp`의 재현 스크립트는 임시이며 현재 API와 맞지 않을 수 있다.
+
+## 1. 2026-10-28 당시 작업 상태
 
 **사용자 최신 확인:** 동작별 애니메이션 클립은 모두 만들어두었다. 소스 시트 폴더를 `Assets/Art/Characters/Player/Source/Hero`로 변경하고 그 안에 정리했다. 실제 파일 목록에서도 해당 폴더와 `Assets/Animations/Player/Player_*.anim` 11개(Idle, Run, Jump, Fall, Landing, Death, Attack1/2/3, Parry, Roll)를 확인했다. 이후 작업은 이 정리된 소스와 기존 클립을 기준으로 진행한다. 이 발언은 Animator 자동 전환 연결 완료나 마지막 달리기 품질 승인까지 명시한 것은 아니다.
 
@@ -297,5 +332,4 @@ assistant가 우클릭 유지→놓기, 최대 차징 자동 발동, 1타 타격
 
 ## 새 세션에 붙여넣을 짧은 메시지
 
-> D:\GitHub\Parry의 SESSION-HANDOFF.md를 읽고, 특히 최신 12절의 시트 수정 이력과 현재 실제 파일 확인 결과를 우선해주세요. 프레임은 256×256이며 달리기·사망은 각 8프레임입니다. 달리기가 오른다리만 움직이는 문제로 여러 번 거절됐고 마지막 v7 GIF는 사용자 미확인입니다. 오른다리가 뒤로 넘어가면서 왼다리가 앞으로 펴지는 실제 교대가 필요합니다. 현재 시트는 Source/Hero의 Hero_*/Player_* 파일로 정리돼 있고 동작별 클립은 사용자가 모두 만들어두었으니 과거 v7 출력 경로를 곧바로 사용하지 말고 비교해주세요. 클립과 Animator도 사용자 변경이 있으므로 보존합니다. 공중 일반 공격과 착지 시트 신규 제작은 요청 범위에서 제외됐으며, 다음 요청에 맞춰 이어가 주세요.
-
+> Parry의 SESSION-HANDOFF.md에서 맨 위 **현재 구현 — 2026-11-04** 절을 우선 읽어주세요. 입력 → MyController → PlayerCharacter 구조와 PlayerMovement, Bool Animator 연동, 3타 적중 콤보, 구르기 착지 버그 수정, 패링 모션, 임시 HP·Death 연결까지 정리돼 있습니다. 입력 설정과 공격·패링 이벤트 시점은 제가 직접 작업합니다. 다음 요청에 맞춰 진행하고 변경 전에 실제 파일을 확인해주세요.

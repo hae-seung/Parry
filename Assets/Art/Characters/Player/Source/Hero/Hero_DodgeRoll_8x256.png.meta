@@ -126,12 +126,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_0
       rect:
         serializedVersion: 2
-        x: 82
-        y: 31
-        width: 92
-        height: 70
+        x: 0
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -148,12 +148,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_1
       rect:
         serializedVersion: 2
-        x: 347
-        y: 31
-        width: 74
-        height: 69
+        x: 256
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -170,12 +170,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_2
       rect:
         serializedVersion: 2
-        x: 600
-        y: 31
-        width: 80
-        height: 69
+        x: 512
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -192,12 +192,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_3
       rect:
         serializedVersion: 2
-        x: 861
-        y: 31
-        width: 69
-        height: 75
+        x: 768
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -214,12 +214,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_4
       rect:
         serializedVersion: 2
-        x: 1107
-        y: 31
-        width: 89
-        height: 68
+        x: 1024
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -236,12 +236,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_5
       rect:
         serializedVersion: 2
-        x: 1358
-        y: 31
-        width: 100
-        height: 68
+        x: 1280
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -258,12 +258,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_6
       rect:
         serializedVersion: 2
-        x: 1607
-        y: 31
-        width: 114
-        height: 84
+        x: 1536
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -280,12 +280,12 @@ TextureImporter:
       name: Hero_DodgeRoll_8x256_7
       rect:
         serializedVersion: 2
-        x: 1863
-        y: 31
-        width: 114
-        height: 91
+        x: 1792
+        y: 0
+        width: 256
+        height: 256
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
@@ -302,7 +302,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: b331ce3a1b021c54a9753330a28d6d37
     internalID: 0
     vertices: []
     indices: 
@@ -310,7 +310,9 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":256.0,"y":256.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
       Hero_DodgeRoll_8x256_0: -1496730838923029909
       Hero_DodgeRoll_8x256_1: -8673431762703076813

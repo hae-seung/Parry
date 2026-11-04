@@ -6,27 +6,30 @@ namespace Parry.PlayerClass
     [RequireComponent(typeof(Animator), typeof(PlayerCharacter))]
     public class PlayerAnimation : MonoBehaviour
     {
+        private Animator animator;
+        private PlayerCharacter character;
+        private PlayerAttack attack;
+
         private static readonly int SpeedId = Animator.StringToHash("Speed");
         private static readonly int IsDeadId = Animator.StringToHash("IsDead");
         private static readonly int IsGroundId = Animator.StringToHash("IsGround");
         private static readonly int IsRollingId = Animator.StringToHash("IsRolling");
+        private static readonly int IsAttackingId = Animator.StringToHash("IsAttacking");
         private static readonly int IsParryingId = Animator.StringToHash("IsParrying");
         private static readonly int VerticalSpeedId = Animator.StringToHash("VerticalSpeed");
-        private Animator animator;
-        private PlayerCharacter character;
 
 
         private bool bIsDead;
         private bool bIsGrounded;
         private bool bIsRolling;
         private bool bIsParrying;
+        private bool bIsAttacking;
 
-        
-        
         private void Awake()
         {
             animator = GetComponent<Animator>();
             character = GetComponent<PlayerCharacter>();
+            attack = GetComponent<PlayerAttack>();
         }
 
         private void Update()
@@ -36,7 +39,7 @@ namespace Parry.PlayerClass
             bIsGrounded = character.IsGrounded;
             bIsRolling = character.IsRolling;
             bIsParrying = character.IsParrying;
-            
+            bIsAttacking = character.IsAttacking;
             
             
             animator.SetFloat(SpeedId, Mathf.Abs(velocity.x));
@@ -45,6 +48,7 @@ namespace Parry.PlayerClass
             animator.SetBool(IsGroundId, bIsGrounded);
             animator.SetBool(IsRollingId, bIsRolling);
             animator.SetBool(IsParryingId, bIsParrying);
+            animator.SetBool(IsAttackingId, bIsAttacking);
         }
 
     }

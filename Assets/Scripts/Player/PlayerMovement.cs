@@ -54,7 +54,6 @@ namespace Parry.PlayerClass
                 body.linearVelocity = velocity;
                 return;
             }
-
             
             if (character.IsRolling)
             {
@@ -63,11 +62,21 @@ namespace Parry.PlayerClass
                 return;
             }
 
-            MovePlayer(ref velocity);
+            if (attack != null && attack.IsAttacking)
+            {
+                velocity.x = 0f;
+                body.linearVelocity = velocity;
+                CancelJump();
+                return;
+            }
 
-            
-            //캐릭터 뒤집기
-            if (Mathf.Abs(horizontalInput) > 0.01f && !attack.IsAttacking)
+            MovePlayer(ref velocity);
+            FaceMoveInput();
+        }
+
+        internal void FaceMoveInput()
+        {
+            if (Mathf.Abs(horizontalInput) > 0.01f)
             {
                 FacingDirection = horizontalInput > 0f ? 1 : -1;
                 sr.flipX = FacingDirection < 0;

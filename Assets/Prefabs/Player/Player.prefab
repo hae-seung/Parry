@@ -495,6 +495,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e9f3dd70ca577940a7b91aa4b7d19ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry.Player.PlayerAttack
+  attackClip: {fileID: 7400000, guid: a05ad4fdb58ac2346b602900da0b8515, type: 2}
   attacks:
   - {fileID: 11400000, guid: 9e75bae284cc464186624341ce2c8c1e, type: 2}
   - {fileID: 11400000, guid: 9ff1f01ea4594667a9a2c5b118ab9e18, type: 2}

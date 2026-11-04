@@ -18,6 +18,7 @@ namespace Parry.PlayerClass
         public Vector2 Velocity => movement.Velocity;
         public bool IsRolling { get; private set; }
         public bool IsParrying { get; private set; }
+        public bool IsAttacking => attack.IsAttacking;
 
         private void Awake()
         {
@@ -33,7 +34,7 @@ namespace Parry.PlayerClass
 
         public void Jump()
         {
-            if (!IsDead && !IsRolling && !IsParrying)
+            if (!IsDead && !IsRolling && !IsParrying && (attack == null || !attack.IsAttacking))
                 movement.Jump();
         }
 
@@ -44,7 +45,7 @@ namespace Parry.PlayerClass
             if (IsDead || IsRolling || IsParrying)
                 return;
 
-            if (attack != null && attack.IsAttackPlaying)
+            if (attack != null && attack.IsAttacking)
                 attack.CancelAttack();
 
             IsParrying = true;
@@ -53,11 +54,13 @@ namespace Parry.PlayerClass
 
         public void Roll()
         {
-            if (IsDead || !IsGrounded || IsRolling || IsParrying || Time.time < lastRollTime + rollCooldown ||
-                (attack != null && attack.IsAttackPlaying))
+            if (IsDead || !IsGrounded || IsRolling || IsParrying || Time.time < lastRollTime + rollCooldown)
                 return;
 
-            
+            if (attack != null && attack.IsAttacking)
+                attack.CancelAttack();
+
+            movement.FaceMoveInput();
             IsRolling = true;
             movement.CancelJump();
         }

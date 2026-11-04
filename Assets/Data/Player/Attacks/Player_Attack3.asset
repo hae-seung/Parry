@@ -15,4 +15,4 @@ MonoBehaviour:
   damage: 35
   hitboxOffset: {x: 0.9, y: 0}
   hitboxSize: {x: 1.2, y: 1.1}
-  animatorStateName: Base Layer.Player_Attack3
+  animationClip: {fileID: 7400000, guid: f62459ea8e62ab043b317b29471a9925, type: 2}

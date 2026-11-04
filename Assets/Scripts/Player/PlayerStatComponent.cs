@@ -26,6 +26,8 @@ namespace Parry.PlayerClass
                 return;
 
             Hp = Mathf.Max(0f, Hp - damage);
+            if (IsDead && TryGetComponent<PlayerAttack>(out var attack))
+                attack.CancelAttack();
         }
     }
 }

@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 48aa3db9a61868d44beaf51c1c48c028, type: 3}
+  m_Name: Goblin_Attack1
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.MonsterClass.MonsterAttackData
+  animationClip: {fileID: 7400000, guid: dcc585f2c6b74a14d82735a6470ef8e3, type: 2}
+  damage: 10
+  attackType: 0
+  causesStagger: 1
+  knockbackDistance: 0.3
+  knocksDown: 0
+  hitboxOffset: {x: 0.016312122, y: -0.24050307}
+  hitboxSize: {x: 2.8871112, y: 1.2870464}
+  distanceCondition: 0
+  range: 1.8
+  cooldown: 0
+  attackEndDelayDuration: 0.5

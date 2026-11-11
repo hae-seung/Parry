@@ -38,7 +38,7 @@ MonoBehaviour:
     m_Modified: 0
     m_ErrorMessage: 
     m_UserModificationsEntityId:
-      m_rawData: 1099511629465
+      m_rawData: 1099511629380
     m_OriginalEntityId:
-      m_rawData: 1099511629464
-  m_LoadAssets: 0
+      m_rawData: 1099511629379
+  m_LoadAssets: -1

@@ -22,6 +22,7 @@ namespace Parry.MonsterClass
         private void Awake()
         {
             spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+            
             if (spriteRenderer != null) 
                 originalColor = spriteRenderer.color;
         }

@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: Player_Attack1
   m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerAttackData
   damage: 20
-  hitboxOffset: {x: 0.9, y: 0}
-  hitboxSize: {x: 1.2, y: 1.1}
+  hitboxOffset: {x: 0.9073529, y: 0.95529675}
+  hitboxSize: {x: 1.5900345, y: 1.5410528}
   animationClip: {fileID: 7400000, guid: a05ad4fdb58ac2346b602900da0b8515, type: 2}

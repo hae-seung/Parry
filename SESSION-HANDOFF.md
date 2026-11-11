@@ -1,43 +1,260 @@
 # Parry 개발 세션 인계
 
-갱신: 2026-11-04 (Asia/Seoul). 프로젝트: `D:\GitHub\Parry`.
+갱신: 2026-11-12 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
 
-이 문서는 새 세션에서 대화를 이어가기 위한 현재 상태 기록이다. **지금 당장 구현을 시작하라는 지시는 아니다.** 사용자의 다음 요청 범위를 확인하고 실제 파일을 다시 읽어 진행한다.
+## 현재 구현과 대화 — 2026-11-12 우선 읽기
 
-## 현재 구현 — 2026-11-04 우선 읽기
+이 절이 최신 기준이다. 사용자는 마지막으로 세션 인계를 요청했다. 다음 요청부터 해당 범위의 작업을 진행한다. 아래 2026-11-11 기록과 원래 기획서에 남아 있는 공격 우선순위·패링·피격 설명은 이 절 및 현재 코드와 대조한다.
 
-아래의 1~12절은 10월 28일 기준의 이력이다. 현재 코드·입력·Animator와 충돌하는 경우 이 절과 실제 파일을 우선한다. 이 문서를 읽는 것만으로 다음 구현 범위가 정해지지는 않는다.
+### 다음 세션 시작
 
-### 플레이어 구성과 입력
+1. 이 절과 Git 상태, 요청에 해당하는 실제 코드를 읽는다. 사용자 편집과 미추적 파일을 보존한다.
+2. 이번 세션에서 만든 몬스터 공격·패링·피격·미리보기 구현은 아래 파일들에 있다. 사용자도 계속 파일과 클립을 직접 수정한다.
+3. Unity 작업은 `unity-pipeline` 스킬과 현재 명령 목록을 확인하고 진행한다. 연결·컴파일·Play 상태를 매번 확인한다.
+4. 원래 전체 기획서는 `C:/Users/USER/Documents/Codex/2026-10-24/skill-creator-c-users-user-codex/outputs/parry-action/GAME-DESIGN.md`다. 이번 세션의 변경 사항은 프로젝트 인계문에 기록했으며 원래 기획서는 이번에 갱신하지 않았다. 최신 사용자 합의는 이 절을 우선한다.
 
-- 경로는 `Assets/Scripts/Player`. Player 프리팹에 `PlayerInput`, `MyController`, `PlayerCharacter`, `PlayerMovement`, `PlayerAttack`, `PlayerAnimation`, `PlayerStatComponent`가 있다.
-- `MyController : PlayerController`가 Input System 콜백을 받는다. 부모 컨트롤러가 캐싱한 `Character`에 Move/Jump/Roll/Parry/Attack을 전달한다. `PlayerCharacter`는 행동 가능 여부와 구르기·패링 상태를 관리한다. 체력이나 물리 계산은 각 컴포넌트에 둔다.
-- `PlayerMovement`는 Rigidbody2D, CapsuleCollider2D.Cast 접지 검사, 수평 이동, 점프, 구르기 속도, 스프라이트 방향을 담당한다. `PlayerAnimation`은 Rigidbody2D 대신 `character.Velocity → movement.Velocity`를 읽는다. 현재 플레이어 스프라이트 렌더러와 클립 바인딩은 루트 기준이다. 옛 기록의 Body 자식 바인딩을 그대로 가정하지 않는다.
-- **입력 에셋/프리팹 이벤트는 사용자가 직접 설정한다.** 현재 액션 에셋 기준 좌클릭 공격, Alt 점프, Z 구르기, Space 패링. 프리팹에 `OnParry` 연결이 있다. 일부 프리팹 `m_ActionName` 표시에는 예전 키 이름이 남아 있으므로 실제 키는 액션 에셋 바인딩을 기준으로 본다.
+### 사용자 의도와 작성 선호
 
-### Animator와 행동
+- 목표는 던전에서 적 한 마리씩 순차적으로 상대하며 패턴을 읽는 전투다. 사용자는 엘든 링·몬헌과 같은 전투 감각을 참고하고 있다.
+- 복잡한 조건은 의미 있는 bool이나 함수로 풀고, 상황과 역할을 한글 주석으로 설명한다. 컴포넌트 참조와 런타임 상태를 묶고 생명주기 함수는 일반 함수보다 위에 둔다. 사용자가 직접 바꾼 순서와 주석을 확인한다.
+- 공격 목록은 `List`를 선호한다. 공격 선택은 가능한 인덱스를 재사용하는 `List<int>`에 모은 뒤 하나를 뽑는 방식이다.
+- 사용자는 호출 시점과 변수 의미를 배우고 있다. 코드 수정 요청과 설명 요청을 구분한다. 패링 성공 시 판정 창을 닫는 처리를 임의로 추가했다가 사용자 지시로 제거한 이력이 있다.
+- 마지막 구현 요청은 밀림 거리와 움찔 여부를 공격 데이터에 넣고, 움찔 중 모든 행동을 막는 것이었다. 구현과 Play 검증까지 완료했다.
 
-- `Assets/Animations/Player/PlayerAnimController.controller`의 Base Layer에 `PlayerMove`(Idle/Run)와 `Jump`(Jump/Fall/Landing) 하위 상태 머신이 있다. 공중 그룹을 만들 당시 이름은 Airborne이었다. 지상 상태에서 상승/낙하 조건에 따라 내부 상태로 직접 진입한다. 발판에서 떨어질 때는 Fall로 바로 들어간다.
-- `PlayerAnimation.Update()`는 Speed(수평 속도 절댓값), VerticalSpeed, IsGround, IsRolling, IsParrying, IsDead를 갱신한다. **캐릭터의 Bool을 필드에 읽어 그대로 전달한다.** Animator 어댑터에서 사망 여부와 행동 상태를 조합해 다시 판단하지 않는다. 사망 중 Roll/Parry 진입 차단 조건은 Animator 전환에 있다.
-- 구르기는 지상에서만 시작 가능하며 공격 모션·패링·기존 구르기·쿨다운 중에는 금지한다. 프리팹의 현재 rollSpeed는 10, rollCooldown은 0.12초. 현재 구현은 구르는 동안 FixedUpdate마다 수평 속도를 적용한다. 발판을 벗어나도 구르기를 끝까지 재생하고, 끝났을 때 공중이면 Fall로 전환한다. `PlayerRollState.OnStateExit()`가 상태를 끄고 쿨다운을 시작한다.
-- 착지 순간 Z에서 미끄러지던 원인은 물리 접지가 먼저 갱신되어 구르기가 수락됐지만 Animator가 아직 Fall에 있었고, 기존 진입 경로가 Idle/Run에만 있었기 때문이다. **현재는 Any State → Roll을 사용한다.** 예전 LateUpdate 트리거 리셋은 이미 제거됐다. 구르기 종료 후 낙하 중 방향키 이동을 막는 실험도 사용자의 요청으로 되돌렸다.
-- 패링은 공중에서도 가능하고 구르기 중과 이미 패링 중에는 시작할 수 없다. 공격 도중에는 공격을 취소한다. `IsParrying` Bool로 Any State → Parry, `PlayerParryState.OnStateExit()`로 종료한다. 지상 패링 중 좌우 이동은 다시 허용했다. 점프와 구르기는 패링 중 금지한다. 공중 패링 시 수직 물리는 그대로 진행한다. **실제 패링 판정, 반격, 쿨다운은 미구현**이다. 판정 타이밍의 Animation Event는 사용자가 나중에 넣을 예정이다.
-- `PlayerStatComponent`의 임시 최대 HP는 100. `TakeDamage(float)`가 HP를 줄이고 `IsDead => Hp <= 0`을 제공한다. `PlayerCharacter.IsDead`는 그 값을 직접 읽는다. Animator는 Any State → Death로 들어가 비반복 클립을 한 번 재생한다. 사망 중 수평 이동·점프·공격·구르기·패링을 막되 공중이라면 중력은 적용된다.
-- 테스트 방법: Play 모드에서 Player의 `PlayerStatComponent` 메뉴 **Take Damage (10)**을 실행하면 피해 10이 들어간다. 몬스터 공격과 플레이어 피해는 아직 연결되지 않았다.
+### 몬스터 공격·데이터
 
-### 공격과 남은 작업
+- `Assets/Scripts/Monster/MonsterAttackData.cs`에 클립, 피해량, `AttackType`(Normal/Heavy), `CausesStagger`, `KnockbackDistance`, `KnocksDown`, 거리 조건·사거리, 쿨타임, 후딜레이가 있다. Inspector 변수에는 한글 Tooltip을 넣었다.
+- 기본 공격/패턴 구분과 패턴 우선 선택을 없앴다. `MonsterData.Attacks` 한 목록에 등록하고, 모든 공격에 동일한 쿨타임 규칙을 적용한다. 쿨타임 0은 재사용 대기 없는 공격이다.
+- `MonsterAttack.Initialize`는 목록을 새 List로 복사한다. 데이터 에셋 참조는 공유하고, `attackReadyTimes`는 몬스터 인스턴스마다 따로 보관한다.
+- `TryStartAttack`은 거리 조건과 쿨타임이 맞는 실제 인덱스를 `availableIndices`에 모으고, `Random.Range(0, availableIndices.Count)`로 목록 위치를 뽑는다. int 최댓값은 제외된다. 목록이 비어 있으면 공격하지 않는다.
+- 시작 순간 클립을 재생하고 방향을 고정하며 쿨타임을 시작한다. Brain은 성공하면 `MonsterAttackState`로 전환한다.
+- `MonsterAttackState.Enter`는 이동을 멈추고 `isWaitingForAttackEndDelay = false`로 초기화한다. `Tick`은 `IsMotionPlaying`인 동안 return한다. 모션 종료를 확인한 순간에만 `attackEndDelayEndTime = Time.time + AttackEndDelayDuration`을 계산한다. 후딜레이 후 전투 종료면 Wander, 아니면 Chase로 간다.
+- `RecoveryDuration`은 `AttackEndDelayDuration`/`attackEndDelayDuration`으로 바꿨고, 데이터에는 이전 이름을 읽기 위한 `FormerlySerializedAs("recoveryDuration")`가 남아 있다.
+- 공격 중 전투 종료는 현재 공격과 후딜레이 종료 후 적용한다. 몬스터 AI의 시작 Wander·추적·시야 상실·지역 배회 정책은 아래 이전 기록을 참고한다.
 
-- 공격은 `PlayerAttackData` ScriptableObject 3개를 순서대로 List에 연결했다. 데이터에는 피해량, 판정 오프셋·크기, Animator 상태 경로가 있다. 기존 20/20/35를 사용하며 데이터는 `Assets/Data/Player/Attacks`에 있다. 공격 재생은 현재 `PlayerAttack`이 `Animator.Play`로 한다.
-- 각 공격 시도 시 시간을 저장한다. 다음 입력까지 1초 이상이면 1타. 그 전에는 직전 공격 적중 시 다음 인덱스로 진행하고, 빗나가면 1타다. 3타 다음은 1타. 판정 이벤트 전 추가 입력은 예약하지 않는다.
-- 준비·타격·회복 타이머와 종료 이벤트는 제거했다. **`ApplyAttackHit()`는 Animation Event 순간에 한 번만 OverlapBox를 검사하고, 같은 타격에 같은 적을 중복 피해 처리하지 않는다.** 오프셋에 hitboxSize를 잘못 쓰던 문제는 수정했다. 현재 세 공격 클립 파일의 이벤트 목록은 비어 있으므로, 실제 적중과 콤보를 테스트하려면 사용자 지정 시점에 이벤트를 붙여야 한다.
-- 공격·패링·사망의 최종 재생과 전투 수치, 몬스터 공격 AI, 스태미나·구르기 무적, 피격 경직·무적, 저장·진행 등은 아직 작업이 필요하다. 공중 일반 공격은 기획상 삭제된 상태다.
+공격 에셋은 사용자가 `Assets/Data/Monster/Attacks/Goblin/`으로 이동했다. 이전 경로 `Attacks/Goblin_Attack1.asset`를 가정하지 않는다.
 
-### 검증과 Editor 작업
+| 현재 에셋 | 종류 | 움찔 | 밀림 거리 | 넘어짐 | 피해 | 사거리 | 쿨타임 | 후딜레이 |
+|---|---|---|---|---|---|---|---|---|
+| Goblin_Attack1.asset | Normal | 켜짐 | 0.3 | 꺼짐 | 10 | 1.8 | 0 | 0.5초 |
+| Goblin_Attack2.asset | Heavy | 켜짐 | 0.9 | 켜짐 | 10 | 2.2 | 4초 | 0.8초 |
 
-- 수정 전 Play 모드에서 방향 입력 없이 발판 끝 제자리 점프 → 첫 착지 순간 구르기를 재현했다. Roll 재생이 아래층 착지 이후로 밀려 추가 8유닛 전진했다. Any State 수정 후 같은 시험에서 공중 Roll 속도 10, 정상 종료, 아래층 착지 후 추가 이동 0유닛, Roll 재진입 없음. 테스트는 실제 Player 프리팹 복제본과 물리·Animator를 사용하고 행동 요청 메서드를 호출했다.
-- 테스트용 Player 복제본의 PlayerInput이 원본과 키보드/마우스를 공유하려고 하면서 경고를 냈다. 이후 비활성 부모 밑에서 복제하고 PlayerInput을 끈 뒤 활성화하여 경고·오류 0건으로 재검증했다. 당시 Play 모드를 종료하고 백그라운드 설정도 원복했다.
-- 최신 구조 분리와 사망 Bool 연결은 로컬 C# 컴파일을 통과했다. 이후 테스트 메뉴까지 포함한 최신 플레이어 전체 흐름과 실제 Death 전환은 Play 모드에서 아직 검증하지 않았다.
-- 샌드박스에서 CLI가 Editor 검색 파일을 못 읽어 `STATUS_DESCRIPTOR_UNREADABLE`가 나온 적이 있다. 승인된 프로젝트 대상 호출로 포트 37800 Editor에 연결했다. Play 전환 직후에는 Pipeline이 잠시 끊길 수 있어 `unity status --until-ready --timeout 20 --project-path D:/GitHub/Parry`로 대기한다. `Temp`의 재현 스크립트는 임시이며 현재 API와 맞지 않을 수 있다.
+이 표는 인계 시 파일 확인값이다. 사용자가 판정 박스와 프레임을 계속 편집하므로 실제 파일을 다시 읽는다. 현재 `ApplyAttackHit` 이벤트 시점은 1번 0.8초, 2번 0.5714286초다. 이전 대화의 2번 0.5초를 고정값으로 사용하지 않는다.
+
+### 타격 전달과 플레이어 측 판정
+
+- `MonsterAttack.ApplyAttackHit()`은 이벤트 순간 `OverlapBox`로 한 번 검사한다. 재사용 결과 List와 `HashSet<PlayerCharacter>`로 중복 콜라이더·이벤트 피해를 막는다. 구간 판정용 시작/끝 이벤트는 아직 구현하지 않았다.
+- 실제 공격·기즈모·미리보기는 모두 **Transform 원점 + HitboxOffset**으로 계산하며 X만 공격 방향에 맞춰 반전한다. 초기에 사용했던 콜라이더 중심 기준은 제거했다. 콜라이더 Offset·크기가 공격 위치를 바꾸지 않도록 했다. Offset/Size는 월드 단위다.
+- `Assets/Scripts/Combat/AttackHitContext.cs`, 네임스페이스 `Parry.CombatClass`의 `readonly struct`로 전달한다. 필드는 Damage, Attacker(Monster 참조), AttackType, CausesStagger, KnockbackDistance, KnocksDown, AttackDirection이다. 타격 순간 데이터 값을 복사한다.
+- 몬스터는 `new AttackHitContext(CurrentAttack, monster, attackDirection)`을 만들어 `target.TakeDamage(context)`를 호출한다. 몬스터 코드에는 패링 검사·플레이어 무적 판단이 없다.
+- `PlayerCharacter.TakeDamage(context)`가 유효 피해/생존 확인 → `parry.TryParryHit()` → 피격 무적 확인 → Stats 체력 감소 → 필요한 행동 취소 → 생존 시 `hitReaction.StartReaction(context)` 순서로 처리한다. 무적 확인보다 패링 확인이 먼저라 피격 무적 중에도 패링 성공 판정이 가능하다.
+- 공격자에게 반격 피해나 성공 알림을 보낼 수 있도록 Attacker를 전달하지만, 해당 반격·자세 피해·알림 처리는 아직 연결하지 않았다.
+- `PlayerCharacter.TakeDamage(float damage, Monster attacker = null)` 편의 오버로드와 컨텍스트의 float 생성자가 **현재 남아 있다**. 일반 공격/움찔 있음/밀림 0으로 감싸며 검증 스크립트가 사용한다. 사용자는 이 오버로드의 존재를 질문했고 설명을 들었다. 제거 요청이 확정된 것은 아니며, 변경 시 검증 호출도 함께 점검한다.
+- `PlayerStatComponent.TakeDamage(float)`는 원시 체력 감소 함수다. 직접 호출하면 PlayerCharacter의 패링·피격 모션 경로를 우회한다. 디버그 ContextMenu도 현재 Stats를 직접 호출한다.
+
+### 시간 기반 패링 — 최종 합의
+
+- `Assets/Scripts/Player/PlayerParry.cs`가 패링을 관리한다. PlayerCharacter.Parry → TryStartParry이며 Input System의 Parry는 Space다.
+- Animator의 Player_Parry 상태와 진입 전환, IsParrying 파라미터를 제거했다. `PlayerParryState.cs/.meta`도 삭제했고 PlayerAnimation에서 패링 bool 전달을 제거했다. 구르기의 PlayerRollState는 유지한다.
+- 패링은 공용 `AnimationClipPlayer`로 재생한다. 현재 클립은 약 0.2초, `parryDuration`은 0.3초다. 유효 시간은 클립 종료와 별도로 계산한다.
+- `IsParrying`은 내부 활성 bool·생존·`Time.time < parryEndTime`을 확인한다. 타격 순간 직접 시간을 확인해 Update 순서에 기대지 않는다.
+- 시작 시 `nextParryTime = Time.time + parryCooldown`(3초), 성공 시 성공 순간 기준 `Time.time + successCooldown`(0.2초)로 변경한다. Inspector에서 조절 가능하다.
+- **성공해도 현재 패링 유효 시간을 종료하지 않는다.** 사용자는 성공 직후 입력이 따닥 중복 실행되는 것을 방지하려고 0.2초를 정했다. 판정 창을 닫는 기능을 다시 추가하지 않는다. 유효 시간 안의 여러 타격은 각각 성공하며 각 성공이 0.2초 쿨타임을 다시 설정한다.
+- 재시도에는 현재 패링 종료와 쿨타임 종료가 모두 필요하다. 거절된 입력은 타이머를 연장하지 않는다. 일반 공격 중 패링은 공격을 취소하며, 피격 경직·구르기·사망 중에는 시작할 수 없다.
+- `CancelParry()`는 패링 상태만 정리하고 자신의 클립이 재생 중일 때만 Stop한다. 일반 공격 등 이후에 재생한 다른 클립을 종료하지 않도록 `IsPlayingClip`으로 확인한다.
+- 정면 조건·패링 불가 공격·성공 시 반격/자세 피해는 아직 연결되지 않았다. 현재 성공 처리는 피해 방어와 쿨타임 변경이다.
+
+### 피격·움찔·밀림·넘어짐
+
+- `Assets/Scripts/Player/PlayerHitReaction.cs`는 피해 처리 후 컨텍스트를 받아 클립·경직·무적·밀림을 관리한다. 피격 Animator 상태는 추가하지 않았다.
+- **최종 사용자 지시로 움찔 여부와 밀림 거리는 공격 데이터 소유**다. 플레이어의 normalHit/heavyHit에는 반응 지속 시간만 남아 있다. 이전 플레이어 쪽 knockbackDistance 필드는 제거했다.
+- CausesStagger 켜짐이면 공격을 취소하고 움찔하며, 이동·점프·공격·패링·구르기의 실행을 막는다. 거리가 0이어도 경직과 행동 잠금은 적용한다.
+- CausesStagger 꺼짐·넘어짐 꺼짐이면 피해와 설정한 밀림만 적용하고 기존 공격/행동을 유지한다. 거리도 0이면 움찔/밀림이 모두 없다. 이 경우에도 피격 무적은 적용한다.
+- KnocksDown은 Heavy일 때만 적용한다. 넘어짐이 켜져 있으면 CausesStagger와 별도로 행동 잠금을 적용한다. 움찔/밀림 시간 → 무릎 꿇기 클립 → 유지 → 기상 클립 종료 후 해제한다.
+- 사용자의 명시적 선택은 **잠깐 유지한 뒤 자동 기상하며 완전히 일어날 때까지 행동 입력 불가·무적**이다. 눕는 최종 사망 프레임까지 진행하지 않는다.
+- 현재 초기값은 일반 반응 0.2초, 강공격 반응 0.35초, 추가 피격 무적 0.15초, 무릎 유지 0.35초다. 넘어짐 공격은 반응 시작부터 기상 완료까지 무적이다. 보호 중 타격은 추가 피해/경직을 주거나 보호 시간을 늘리지 않는다.
+- PlayerMovement가 Rigidbody2D의 수평 속도로 감속 밀림을 적용한다. 수직 속도와 벽/바닥 충돌은 유지한다. 움찔 중에는 입력 이동 대신 밀림만 적용하고, 움찔이 없으면 일반 이동/공격/구르기 속도에 밀림을 합친다. 이동 축 값은 최신 상태로 유지해 키를 놓는 입력이 유실되지 않도록 한다. 행동 입력 저장 기능은 추가하지 않았다.
+- 피격 중단·비활성화·사망 시 코루틴/밀림/자신의 클립을 정리한다. 치명타는 피격 모션보다 기존 사망 동작을 우선한다. 공중 피격의 착지·기상에 관한 추가 규칙은 별도로 확정하지 않았다.
+
+| 새 클립 | 사용 스프라이트 | 현재 길이 |
+|---|---|---|
+| Assets/Animations/Player/Player_Hurt.anim | 원본 HeroKnight_46/47, 흰색 구간 제외 | 0.2초 |
+| Assets/Animations/Player/Player_Knockdown.anim | DeathNoBlood_3/4/5, 무릎 꿇기까지 | 0.3초 |
+| Assets/Animations/Player/Player_GetUp.anim | 같은 구간 5/4/3 역재생, 임시 기상 모션 | 0.3초 |
+
+- 클립은 모두 10fps·비반복이며 프리팹과 씬의 PlayerHitReaction에 연결했다. 원본 스프라이트 에셋의 분할/피벗은 변경하지 않았다.
+- AnimationClipPlayer.Play에 `holdLastFrame = false` 선택 매개변수를 추가했다. true면 마지막 프레임에서 속도 0으로 유지하고 반응 종료 시 Stop한다. 일반 공격·패링은 기본 false를 사용한다. `IsPlaying`은 노드 유효 여부이므로 마지막 프레임 유지 중에도 true다.
+- 흰색 피격 플래시·SpriteRenderer 색 점멸·히트스톱·슬로모션·카메라 반응은 아직 추가하지 않았다. 사용자가 첫 플래시 요청을 보류하고 피격 설계부터 논의했다. SpriteRenderer 기본색이 이미 흰색이므로 기본 머티리얼에서 color=white만으로 흰 실루엣 플래시가 되지는 않는다고 설명했다.
+
+### 공격 판정 미리보기 Editor
+
+- `Assets/Editor/MonsterAttackPreviewWindow.cs`와 `.uss`의 UI Toolkit EditorWindow다. 클래스 이름은 Monster지만 플레이어와 몬스터 모두 지원한다.
+- 메뉴는 `Tools > Parry > Monster Attack Preview`와 `Tools > Parry > Player Attack Preview`다. 같은 공용 창의 기준 캐릭터를 전환한다.
+- 공격별 선택, 재생/일시정지, 이전/다음 프레임, 시간 슬라이더, ApplyAttackHit 이벤트 프레임으로 이동, 좌우 보기, 판정 위치/크기 입력, Scene 핸들, 공격 데이터 저장 기능이 있다.
+- 미리보기 위치 좌표와 `Scene에서 캐릭터 이동` 토글이 있다. 켜면 임시 캐릭터 위치, 끄면 판정 박스를 드래그한다. 공격/프레임 변경 및 재생 중 배치 위치를 유지한다.
+- 실제 전투 오브젝트 옆에 HideAndDontSave 임시 SpriteRenderer/Animator를 만들고 AnimationMode.SampleAnimationClip으로 표시한다. 창 종료·Play 진입·리로드 때 정리한다. 몬스터/플레이어 모두 Transform 원점 기준으로 표시한다. 실제 공격 데이터 편집은 SerializedObject를 통해 수행하며 저장 버튼을 제공한다.
+- 초기 테스트용 `Goblin_AttackPreview` 씬 오브젝트와 `Goblin_AttackPreview.controller`도 남아 있다. EditorOnly 태그이며 기본 상태는 이벤트 없는 PreviewIdle이다. 이 오브젝트에는 실제 전투 컴포넌트가 없다.
+- 일반 기즈모는 몬스터 선택 시 편집 모드 하늘색(등록 공격들), 실행 중 노란색/빨간색(이벤트 전/후) 박스와 중심점을 표시한다. 공격별 편집에는 전용 창을 사용한다.
+
+### 검증 범위·현재 환경
+
+- `AgentScripts/VerifyPlayerHitReactions.cs`는 최종 움찔/밀림 설정 변경 후 Play 검증을 통과했다. 일반/강공격, 공격 취소, 작은/큰 밀림, 벽, 보호 시간 연장 방지, 넘어짐·기상 전체 입력 잠금과 무적, 비활성/사망, 움찔×밀림 4가지 조합을 확인했다. 밀림 0에서도 이동·점프·공격·패링·구르기가 실행되지 않음을 확인했다.
+- `VerifyMonsterAttackHits.cs`는 실제 두 클립 이벤트·중복 피해 방지·범위 밖 빗나감·취소·좌측 공격·사망을 검증했다. 컨텍스트 변경 후에도 통과했으며 최종 움찔 옵션 추가 후에는 전체를 다시 실행하지 않았다.
+- `VerifyTimedPlayerParry.cs`는 실제 이벤트 패링, 클립보다 긴 유효 시간, 성공 후 창 유지, 시도 3초/성공 0.2초, 재입력 거절, Update와 독립적인 만료, 공격 취소·다음 클립 보호·비활성/사망을 검증했다. 최종 움찔 옵션 추가 후 전체 재실행은 하지 않았다.
+- `VerifyMonsterAttackPreview.cs`, `VerifyPlayerAttackPreview.cs`는 공격 프레임·원점 기준·위치 유지·재생/정지·데이터 편집·정리를 검증했다. 몬스터 검증에는 콜라이더 크기/Offset이 좌우 공격 위치에 영향을 주지 않는 검사도 있다. 최종 런타임 변경 뒤 UI 전체를 다시 검사한 것은 아니다.
+- 이번 문서 인계 시에는 코드·에셋과 상태를 읽었으며 Play 테스트를 새로 돌리지 않았다. 프로그램 방식 검증과 실제 키보드 입력 플레이 테스트를 구분한다. CUA 화면 캡처는 시간 초과가 있었으므로 UI 화면 캡처 검증 성공으로 보고하지 않는다.
+- 인계 시 Unity 6000.6.7f1, 포트 37800, 편집 모드 stopped, 컴파일 완료, 현재 Console 오류 0/경고 0, Run In Background false다. Pipeline 보관 누계(error 1/warn 6)는 현재 콘솔 수와 다르다.
+- 모든 CLI 명령에 `--project-path D:/GitHub/Parry`를 지정한다. 다른 OS 사용자/샌드박스 접근 때문에 필요한 명령은 프로젝트 대상 권한 상승으로 실행했다. beta.17 CLI 업데이트는 여전히 승인/실행하지 않았다.
+- `script recompile` 응답 뒤 `script recompile_status`가 completed인지 확인한다. triggered가 오래 유지되거나 리로드 중 연결이 끊길 수 있다. `editor status`·`unity status --until-ready --timeout 20`으로 실제 상태를 다시 확인한다. 필요 시 `editor set_auto_tick --enable true`를 사용한다.
+- Play 검증은 `editor.playmode set_run_in_background --enable true` → `editor.playmode start` → 준비 확인 → `script run --file AgentScripts/파일.cs --entry 클래스.Run` → stop → run_in_background false 순서로 진행했다. 초기 생성용 Setup 스크립트들은 실행 후 제거했다.
+- Git은 main이며 사용자 변경과 미추적 코드·에셋이 많다. 이번 세션에서 커밋/푸시는 하지 않았다. 소유권 오류가 나면 읽기 명령에 `git -c safe.directory=D:/GitHub/Parry ...`를 사용한다. 전역 Git 설정은 바꾸지 않았다.
+
+### 다음 요청에 따라 다룰 미연결 부분
+
+패링 반격/자세 피해·공격자 성공 알림, 정면/패링 불가 조건, 구르기 무적·스태미나, 구간 판정 시작/끝 이벤트, 피격 표시와 시간 효과, 공중 피격 세부 규칙은 후속 요구에 맞춰 연결한다. 다음 구현을 인계문만으로 자동 선택하지 않는다.
+
+## 보관 — 현재 구현과 대화 2026-11-11
+
+이 절은 몬스터 공격·패링·피격 구현 전의 기록이다. AI 감지·배회·콜리전 배경과 원본 기획 경로를 참고하고, 최신 구현은 맨 위 2026-11-12 절과 현재 파일을 따른다.
+
+### 다음 세션 시작 순서
+
+1. 이 절을 읽고 Git 상태 및 관련 실제 파일을 확인한다. 사용자 변경과 미추적 에셋을 보존한다.
+2. 몬스터 작업 전 원래 `GAME-DESIGN.md`의 5절·6.3절·6.4절을 읽는다. 특히 이전 스폰 귀환 규칙 대신 최종 전투 종료·배회 규칙을 따른다.
+3. Unity 작업 시 현재 Editor 연결·모드를 다시 확인한다. 검증 명령과 주의사항은 아래에 있다.
+4. 사용자가 코드를 배우며 직접 편집하고 있다. 현재 코드에 근거해 호출 순서·값의 의미를 설명하고, 다음 요청이 오기 전 임의 기능을 추가하지 않는다.
+
+### 원래 기획 기준 문서
+
+`C:/Users/USER/Documents/Codex/2026-10-24/skill-creator-c-users-user-codex/outputs/parry-action/GAME-DESIGN.md`
+
+- 전체 기획의 원본이다. 사용자는 원본에 계속 통합 갱신하기를 원한다. 프로젝트 루트에 새 GAME-DESIGN.md를 만들지 않는다.
+- 이번 세션에서 6.3의 감지·전투 종료·배회를 최종 규칙으로 갱신했다. 원본 폴더의 backups에 변경 전 사본을 남겼다.
+- 같은 폴더의 GLOSSARY.md/NEXT-SESSION.md 및 문서 하단의 과거 변경 이력은 최신 규칙과 다를 수 있다.
+- 원본은 워크스페이스 밖이다. 수정할 때 도구의 외부 쓰기 권한 절차를 따른다.
+
+### 대화 끝과 사용자 코드 작성 선호
+
+- 마지막 요청은 세션 인계 정리다. 직전에는 IdleState를 제거하고 시작 상태를 Wander로 통일했으며, Wander.Tick의 상황별 한글 주석을 정리했다.
+- 사용자 명시: 함수와 if 분기를 읽기 쉽게 작성한다. 복잡한 계산·조건을 if 안에 몰아넣지 말고 의미 있는 판단 함수나 이름 있는 bool 변수로 분리한다. 함수·분기가 어떤 상황이며 무엇을 하는지 한글 주석으로 설명한다. 현재 MonsterWanderState.Tick을 예시로 삼는다.
+- 컴포넌트 참조 필드는 맨 위, 관련 상태 변수는 한곳에 묶는다. 프로퍼티는 Awake 위, Awake/Start/Update 등 생명주기 함수는 일반 함수보다 위를 선호한다. 기존 파일에서 사용자가 바꾼 순서는 읽고 보존하며 요청 범위에서 정리한다.
+- “사람들은 보통 어떻게 하냐”는 실무의 유지보수·확장 가능한 설계를 묻는 뜻이다. 단순 하드코딩 API 예제를 설계 답변으로 대체하지 않는다. 업계 다수가 쓴다고 근거 없이 단정하지 않는다.
+- 역할과 의존성을 먼저 설명한다. 사용자는 불필요한 옵션·복잡한 구조·검증하지 않은 방어 코드를 싫어한다. 요청하지 않은 기능을 미리 추가하지 않는다.
+- 같은 설정·참조·결과 배열은 가능한 한 초기화 때 캐싱해 재사용한다. 구조체 new가 곧 GC 할당은 아니라는 점은 설명했다. 최적화 효과를 측정 없이 과장하지 않는다.
+- PlayerAttack의 bool 예약 흐름을 유지한다. 과거 AttackPhase enum은 삭제했다. 피격 점멸은 코루틴과 `StartCoroutine(nameof(HitFlash))` 방식을 유지한다.
+- 사용자는 Inspector·클립 이벤트·입력 설정을 직접 수정한다. 설명 중 과거 값이 아닌 현재 파일을 다시 읽는다.
+
+### 몬스터 최종 행동 규칙
+
+- 일반 몬스터 고블린부터 구현 중이다. AI 방식은 사용자가 **코드 FSM**을 선택했다. Unity Behavior를 추가하지 않았다.
+- 활성화 → Wander. 플레이어 발견 → Chase. 전투 종료 → 종료 순간의 현재 위치를 중심으로 Wander. 배회 중 재발견 → Chase.
+- 전투 종료: 플레이어와 몬스터의 실제 2D 거리가 기준 초과 **OR** 감지 실패 상태가 지정 시간 지속. 대상이 사망·비활성·없어진 경우도 현재 정책은 종료로 판단한다.
+- **스폰 귀환은 폐기했다.** ShouldReturn, ReturnState, ReturnPolicy, spawnPosition, spawnDistanceLimit은 제거했다. 과거 OR/AND 스폰 귀환 논의를 되살리지 않는다.
+- IdleState도 제거했다. 가만히 기다리는 구간은 Wander 내부의 Wait로 처리한다.
+- 사망 이벤트와 DeadState는 사용자 요청으로 제거했다. Brain.Update는 `monster.IsDead`이면 return만 한다. Monster.TakeDamage에서 체력 0이면 GameObject 비활성화, Brain.OnDisable에서 상태 Exit/Clear와 이동 정리를 수행한다.
+- 전방만 감지하는 frontOnly/detectOnlyInFront는 사용자가 요청하지 않은 옵션이라 제거했다. 기본적으로 앞뒤 구분 없이 감지한다.
+- 높이 검사는 논의했지만 **아직 제거하지 않았다**. 콜라이더 발 위치 차이가 heightTolerance보다 크면 감지 실패한다. 원래 기획의 다른 높이 발판 감지 제한을 근사 구현한 것이다. 같은 발판 객체인지 검사하지는 않는다.
+
+### 몬스터 클래스와 데이터
+
+모두 `Assets/Scripts/Monster/`, 네임스페이스 `Parry.MonsterClass`.
+
+| 파일 | 현재 역할 |
+|---|---|
+| IMonsterState.cs | 일반 C# 상태의 Enter/Tick/Exit 규약 |
+| MonsterStateMachine.cs | 현재 상태 저장, Tick 위임, 이전 Exit → 새 Enter, Clear. 같은 객체 중복 전환은 `CurrentState == nextState`로 거절 |
+| MonsterBrain.cs | Data/컴포넌트 참조 확보, 상태·정책 객체 생성, 상태머신 실행, 센서 결과 전달. ShouldEndCombat은 정책에 위임 |
+| MonsterSensor.cs | 독립 Update에서 감지하고 IsTargetVisible·LastSeenTime·LastSeenPosition 저장 |
+| MonsterMovement.cs | 물리 이동·방향·Animator Speed 전달, 배회 이동 가능 검사 |
+| MonsterChaseState.cs | 전투 종료 검사, 마지막 목격 위치를 향한 수평 이동·방향·정지 |
+| MonsterWanderState.cs | 현재 위치를 중심으로 목적지 무작위 선택 → 이동 → 대기를 반복. 상황별 한글 주석과 판단 함수 존재 |
+| MonsterCombatPolicy.cs | 거리·시야 상실 시간으로 공통 전투 종료 판단. 향후 공격 상태에서도 재사용할 수 있음 |
+| MonsterData.cs | ScriptableObject와 감지/추적/전투/배회 설정 구조체 |
+| Monster.cs | 기존 체력 감소·피격 점멸·사망 비활성화. Hp 프로퍼티는 아직 실제 hp 필드와 연결되지 않았으므로 검증 시 주의 |
+
+- Data 에셋: `Assets/Data/Monster/Goblin.asset`. 현재 씬의 MonsterBrain.data에 연결했다.
+- Data는 이동 속도와 Detection/Chase/Combat/Wander 설정을 보관한다. 이동 속도·감지 설정은 컴포넌트 Initialize에 전달하고, 상태/정책 설정 구조체는 생성자에서 복사한다. 런타임 기록은 에셋이 아닌 각 인스턴스에 보관한다.
+- 원본 에셋을 실행 중 바꿔도 이미 복사한 설정은 자동 갱신되지 않는다. 상태 객체는 몬스터마다 한 번 생성해서 재사용하며 ChangeState에 주입한다.
+- 현재 기본값: 이동 2, 감지 6, 높이 허용 0.5, 추적 정지 거리 1.2, 전투 이탈 거리 9, 시야 상실 3초, 배회 반경 2, 대기 1초, 이동 제한 3초, 도착 허용 0.05. 확정 밸런스가 아닌 조정 가능한 초기값이다.
+- 체력·피격 색상/점멸 시간은 기존 Monster에 남아 있다. 공격 데이터·자세 데이터는 아직 추가하지 않았다.
+
+### 감지·이동의 구체 흐름과 최근 논의
+
+- Sensor는 `[DefaultExecutionOrder(-100)]`으로 Brain보다 먼저 매 프레임 갱신한다. 감지/판단 interval은 사용자 요청으로 제거했다. Brain.ObserveTarget도 제거했다.
+- 플레이어는 Sensor.target의 **Inspector 직접 참조**다. 시야 Trigger 진입으로 탐색하는 방식은 논의만 했으며 구현하지 않았다. 레이어와 태그는 별개다.
+- CanSeeTarget: 대상 유효성 → IsWithinDetectionDistance → IsAtDetectableHeight → HasNoObstacleToTarget.
+- HasNoObstacleToTarget은 몬스터 중심에서 지정 플레이어 중심까지 Raycast한다. Player를 실제로 맞혀야 성공하는 방식이 아니라 **사이에 장애물이 없으면 성공**하는 가림 검사다. 기존 HasClearLineOfSight라는 이름은 사용자가 오해하기 쉽다고 하여 변경했다.
+- 필터는 Initialize에서 설정하고 Trigger는 제외한다. 결과 sightHits[32]를 재사용한다. Monster/Player 태그 콜라이더는 CompareTag로 건너뛰며 IsChildOf는 제거했다. 배열이 꽉 차면 누락 장애물 가능성 때문에 감지 실패로 처리한다.
+- 보이는 동안 매 프레임 LastSeenPosition은 실제 대상 위치로 갱신된다. 놓치면 기록이 고정되어 마지막 위치까지만 접근하고, 시야 상실 시간 만료 후 Wander로 전환한다.
+- Chase의 이동·정지 판단은 x축 거리다. 공통 전투 종료 거리 비교는 실제 대상의 x/y 제곱 거리다. 이동 정지 거리를 미래의 공격 유효 범위 판정으로 재사용하지 않는다.
+- Movement.MoveTo는 목적지만 저장한다. FixedUpdate에서 수평 속도를 정하고 수직 속도는 유지한다. 현재 실제 코드는 `Clamp(distance / Time.fixedDeltaTime, -moveSpeed, moveSpeed)`다. `/` 대신 `*`로 바꾸는 실험을 했지만 현재 파일은 다시 `/`이므로 이전 대화의 곱셈 변경을 최신 상태로 오인하지 않는다.
+- 방향은 Chase에서 Face(lastSeenX)로 정지 거리 안에서도 갱신한다. 거의 겹친 경우 0.01 허용치를 둔다.
+- Animator Speed는 Update에서 **실제 Rigidbody2D.linearVelocity.x 절댓값**을 전달한다. 이전에는 이동 명령 속도를 전달해 벽에 막혀도 Speed=2/Walk가 유지됐고, 로그로 실제 속도 0과 차이를 확인해 수정했다.
+- CanWalkTowards는 Initialize에서 캐싱한 필터와 결과 배열(각 1칸)을 사용한다. 몸 앞 얇은 OverlapBox로 벽 검사 → 없으면 발 앞 아래 Raycast로 지면 검사. 몸 Bounds는 현재 위치/크기 기준으로 매번 읽는다. 기존 Collider.Cast/법선 순회는 단순화했다.
+- Wander에서만 이동 가능 검사를 호출한다. Chase에 경로 탐색·점프·장애물 우회는 없다. 목적지에 막히면 실제 속도 0/Idle로 표시되고 전투 종료 조건을 기다린다.
+- Wander.Enter는 `brain.transform.position.x`를 중심으로 복사하고 Wait한다. 재진입할 때 새 중심으로 갱신한다. 초기 활성화 시 다른 컴포넌트 Awake 순서에 의존하지 않으려고 Transform을 사용했다.
+
+### 플레이어 클립 재생기 — 기존 인계와 달라진 부분
+
+- `Assets/Scripts/Animation/AnimationClipPlayer.cs`, `Parry.AnimationClass`. Animator가 기본 Controller를 직접 실행하고, 필요할 때 클립만 Playables로 임시 출력한다.
+- **믹서와 AnimatorControllerPlayable은 제거했다.** PlayerAnimation도 Animator에 직접 SetFloat/SetBool한다. 클립 재생기의 파라미터 전달 함수는 없다.
+- Awake에서 PlayableGraph/GameTime과 AnimationPlayableOutput을 한 번 생성한다. 초기 Target은 null.
+- Play: 이전 노드 보관 → 새 AnimationClipPlayable 생성/시간 0 → Output 소스 교체 → SetTarget(animator) → 이전 노드 제거 → graph.Play.
+- 연속 클립 교체에서는 Stop을 호출하지 않아 Animator 연결을 유지한다. 현재 SetTarget은 조건 없이 호출한다. 이 중복 호출을 줄이는 조건에 대한 대화는 있었으나 현재 파일이 기준이다.
+- Stop: SetTarget(null), 소스 해제, graph.Stop, 현재 클립 노드 제거. 기본 Controller가 다시 출력한다. 그래프/Output은 재사용하고 OnDestroy에서 그래프 해제한다.
+- Update에서 비반복 클립 자연 종료 시 Stop한다. 반복 클립은 명시적으로 Stop한다. 공격 논리 종료는 PlayerAttack.EndAttackMotion 이벤트가 담당한다.
+- `Evaluate(0)`은 제거했다. 클립별 Dictionary 캐싱은 논의만 했고 구현하지 않았다. 그래프·Output만 캐싱하고 클립 노드는 재생 요청마다 만든다.
+- **공격 끊김의 실제 원인:** 기본 Controller에 남아 있던 Player_Attack 상태가 1타를 별도로 재생해 Playables와 중복 이벤트를 발생시켰다. 로그에서 현재 2/3타인데 발신 이벤트는 1타인 호출을 확인했다. 기본 Controller의 Player_Attack 상태와 진입 전환을 제거해 해결했다.
+- 이 문제를 막으려고 임시로 넣었던 이벤트 클립/시간 검증 IsCurrentEvent는 제거했다. 이전 이벤트가 엔진 내부에서 지연됐다는 초기 추측을 확정 원인으로 재서술하지 않는다.
+- 공격 이벤트는 매개변수 없는 ApplyAttackHit/OpenComboBuffer/EndAttackMotion이며 bool 예약 흐름을 유지한다. 종료 이벤트 → 예약 있으면 다음 클립, 없으면 Stop.
+- 현재 공격 세 클립 모두 14fps지만 사용자 편집으로 프레임 배치와 이벤트가 달라졌다. 인계 시 파일 확인상 모두 길이 약 0.5714초/EndAttackMotion 0.5초다. 수치를 고정해서 가정하지 말고 실제 클립을 읽는다. 입력 설정과 이벤트 시점은 사용자가 관리한다.
+- 기존 PlayerMovement/PlayerCharacter의 이동·점프 제한, 구르기/패링/사망 공격 취소, 적중 콤보, OverlapBox 판정은 유지한다. 자세 피해·실제 패링 전투 연결·스태미나는 아직 작업 대상이다.
+
+### 씬·콜리전·태그
+
+- 씬: `Assets/Scenes/SampleScene.unity`, Player 프리팹: `Assets/Prefabs/Player/Player.prefab`.
+- 현재 Monster에 Rigidbody2D/BoxCollider2D/SpriteRenderer/Animator와 Monster/Movement/Sensor/Brain이 붙어 있다. Sensor.target은 씬 Player 참조다.
+- 플레이어는 Player 레이어(9), 몬스터는 Monster 레이어(8). 플레이어와 몬스터는 서로 밟거나 밀지 않고 통과한다.
+- 사용자 요청으로 **프로젝트 충돌표의 Player↔Monster는 활성화**하고, 플레이어 CapsuleCollider2D의 Layer Overrides → Exclude Layers에 Monster(256)를 지정했다. Rigidbody exclude는 0이다. 바닥·벽 접촉과 공격 Overlap은 유지한다.
+- 플레이어 프리팹/씬 콜라이더 오브젝트에는 Player 태그, 몬스터에는 Monster 태그를 지정했다. 자식 콜라이더를 추가하면 태그도 맞춰야 CompareTag 제외가 적용된다.
+- Layer Collision Matrix와 개별 Exclude Layers는 별도 설정이다. Exclude는 전역 결과를 합쳐 표시하지 않고 해당 콜라이더에 지정한 예외만 보여 준다고 설명했다.
+- MonsterController는 Speed Float로 Idle/Walk를 전환한다. FSM IdleState 제거와 Animator Idle 모션 제거는 다른 문제이므로 Animator Idle은 유지한다.
+
+### 검증 기록과 현재 Editor 상태
+
+- `AgentScripts/VerifyMonsterBrain.cs`: 상태 주입 생명주기, 센서 독립 갱신, 벽/높이 감지 제외, 추적, 스폰 제한 없는 교전, 거리/시야 상실 종료, 지역 배회, 재감지, 벽/낭떠러지/낮고 높은 장애물/Trigger 처리, 비활성/재활성, 사망 시 Tick 중단.
+- `AgentScripts/VerifyMonsterPlatform.cs`: 플레이어 뒤쪽 이동 시 두 프레임 내 방향 전환, 발판에 막힌 실제 속도 0/Animator Speed 0, 지속 시야 상실 후 Wander 전환. 중간 기록을 반환하는 재현 스크립트다.
+- `AgentScripts/VerifyPassThrough.cs`: 별도 PhysicsScene2D에서 플레이어 Collider 제외 설정으로 통과/밀림 방지/몬스터 위 착지 방지/바닥 접촉/공격 Overlap 유지.
+- 각 스크립트는 해당 변경 시점에 통과했다. 마지막 전체 AI Play 검증은 Idle 제거 후 통과했다. 최신 인계 정리에서는 코드를 다시 읽고 컴파일·콘솔 상태만 확인했으며, 모든 테스트를 새로 실행한 것은 아니다. 실제 키 입력 검증으로 보고하지 않는다.
+- 현재 Editor는 편집 모드(stopped), 컴파일 완료, 현재 Console 오류 0/경고 1. 경고는 검증용 Player(Clone)의 입력 장치가 기존 Player와 중복돼 control scheme을 찾지 못한 기록이다. Pipeline 보관 로그의 과거 오류/경고 누계는 현재 콘솔 수와 다르다.
+- 검증 후 임시 오브젝트는 제거했고 Run In Background는 false로 복원했다. 이 세션에서 Git 커밋/푸시는 하지 않았다. 기존부터 사용자 변경과 미추적 파일이 많다.
+- IDE에서 ObserveTarget/ShouldReturn(visible) 오류를 사용자가 보고했을 때 디스크 파일에는 이미 새 API가 반영돼 있었다. Unity 성공을 IDE 해결로 단정하지 않는다. 재발하면 저장되지 않은 편집 내용/IDE 동기화를 확인하고 사용자 편집을 덮어쓰지 않는다. 과거 Rider 캡처는 실패했다.
+
+### Unity 재개 명령과 주의사항
+
+- `unity-pipeline` 스킬을 읽고 현재 CLI 명령을 조회한다. 스킬 예시의 일부 이름은 현 패키지에서 바뀌었다.
+- CLI 설치 버전 beta.14, beta.17 업데이트 알림을 확인했지만 업데이트 승인은 받지 않았다. 임의 self-update는 하지 않는다.
+- 프로젝트는 `D:/GitHub/Parry`, Pipeline 포트 37800, Editor Unity 6000.6.7f1이다. 모든 명령에 프로젝트 경로를 명시한다.
+- STATUS_DESCRIPTOR_UNREADABLE은 다른 OS 사용자/샌드박스 접근 문제로 발생했고, 해당 프로젝트 대상 권한 상승 호출로 연결했다.
+- 상태: `unity status --until-ready --timeout 20 --project-path D:/GitHub/Parry`.
+- 백그라운드 갱신: `unity command editor set_auto_tick --enable true --project-path D:/GitHub/Parry`.
+- 컴파일: `unity command script recompile ...` 이후 `script recompile_status`가 completed인지 확인. 도메인 리로드 중 socket hang up/인스턴스 없음은 준비 확인 후 재연결한다.
+- Play: `editor.playmode start` / `editor.playmode stop`. 실행 중 검증은 `editor.playmode set_run_in_background --enable true`가 필요했고 검증 후 false로 복원했다.
+- 검증 실행: `unity command script run --file AgentScripts/VerifyMonsterBrain.cs --entry VerifyMonsterBrain.Run --project-path D:/GitHub/Parry` 등. Play 전후 리로드가 끝난 것을 확인한다.
+- 콘솔: `console status`, `console get --tail N --level error`. 과거 누계와 groundTruth 현재 콘솔을 구분한다.
+
+### 남은 작업 — 다음 요청에 맞춰 진행
+
+- 몬스터 공격·패턴·공격 데이터·회복·자세·스턴·플레이어 전투 연결은 아직 없다. 공격 클립 제작은 사용자가 진행한다는 선호를 유지한다.
+- 기본 공격 1종 + 패턴 1종, 패턴 우선 선택/개별 쿨타임·거리 조건/고정 회복 시간, 일반 피격으로 행동 중단 안 함, 패링으로 자세 감소 등은 원래 기획서를 따른다.
+- 공격/기절 중 전투 종료를 즉시 적용할지 종료 후 배회할지 확정이 필요하다. IdleState가 없어졌으므로 과거 기획의 스턴 회복 후 Idle 복귀 문구와 현재 Wander 구조도 해당 구현 전에 조율한다.
+- 높이 감지 규칙은 토론만 했고 남아 있다. 이동 가능성과 시야는 다르다. 요청 없이 높이 검사나 앞쪽 제한을 새로 추가/제거하지 않는다.
+- 몬스터별 데이터는 준비됐지만 현재 공통 상태 조합은 Chase/Wander 두 개다. 미래 Attack/Stun 상태와 몬스터별 행동 구성을 어떻게 조립할지는 실제 요구 범위에 맞춰 확장한다.
+- 다음 할 일을 인계문만으로 자동 확정하지 않는다. 사용자의 다음 요청을 기다린다.
+
+---
+
+아래 절은 이전 세션의 보관 이력이다. 기획과 최신 구현은 위 절과 실제 파일, 원래 통합 기획서를 먼저 확인한다.
 
 ## 1. 2026-10-28 당시 작업 상태
 
@@ -60,7 +277,7 @@
 
 `C:\Users\USER\Documents\Codex\2026-10-24\skill-creator-c-users-user-codex\outputs\parry-action`
 
-- `GAME-DESIGN.md`: 전체 기획의 최신 통합 기준. 2026-10-28에 공중 일반 공격 삭제와 변형 스킬 추가까지 반영했다.
+- `GAME-DESIGN.md`: 전체 기획의 최신 통합 기준. 2026-11-09 몬스터·패턴·자세·귀환 규칙까지 반영했다.
 - `GLOSSARY.md`: 전투·진행·스킬 용어.
 - `NEXT-SESSION.md`: 당시 인계문.
 - `design-brief.md`: 이전 대화 이력. 과거 규칙을 최신 기획으로 오인하지 않는다.
@@ -332,4 +549,4 @@ assistant가 우클릭 유지→놓기, 최대 차징 자동 발동, 1타 타격
 
 ## 새 세션에 붙여넣을 짧은 메시지
 
-> Parry의 SESSION-HANDOFF.md에서 맨 위 **현재 구현 — 2026-11-04** 절을 우선 읽어주세요. 입력 → MyController → PlayerCharacter 구조와 PlayerMovement, Bool Animator 연동, 3타 적중 콤보, 구르기 착지 버그 수정, 패링 모션, 임시 HP·Death 연결까지 정리돼 있습니다. 입력 설정과 공격·패링 이벤트 시점은 제가 직접 작업합니다. 다음 요청에 맞춰 진행하고 변경 전에 실제 파일을 확인해주세요.
+> SESSION-HANDOFF.md 맨 위 **현재 구현과 대화 — 2026-11-11**을 읽고 이어가자. 몬스터 작업 전 원래 GAME-DESIGN.md의 5절·6.3절·6.4절도 읽어줘. 현재 몬스터는 ScriptableObject 설정 복사 + 주입식 코드 FSM의 Chase/Wander이고, 스폰 귀환·IdleState·DeadState·전방 감지 옵션은 제거했어. 센서는 독립 갱신, 전투 종료는 거리 초과 또는 시야 상실 시간 만료 후 현재 위치 배회야. 복잡한 조건은 판단 함수/bool로 분리하고 한글 상황 주석을 달아줘. 현재 코드와 사용자 변경을 먼저 확인하고 내가 다음 요청할 때까지 기다려줘.

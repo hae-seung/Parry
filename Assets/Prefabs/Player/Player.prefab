@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8692090188711705602}
   - component: {fileID: 2817183538530047236}
-  m_Layer: 0
+  m_Layer: 9
   m_Name: AttackVisual
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -112,9 +112,12 @@ GameObject:
   - component: {fileID: 3863320199812245517}
   - component: {fileID: 7217727290676639249}
   - component: {fileID: 3223051112556595818}
-  m_Layer: 0
+  - component: {fileID: 5400493633336363703}
+  - component: {fileID: 8998924862070523584}
+  - component: {fileID: 8136084522499016372}
+  m_Layer: 9
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -178,7 +181,7 @@ CapsuleCollider2D:
     m_Bits: 0
   m_ExcludeLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 256
   m_LayerOverridePriority: 0
   m_ForceSendLayers:
     serializedVersion: 2
@@ -196,8 +199,8 @@ CapsuleCollider2D:
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
-  m_Offset: {x: -0.2, y: -0.75}
-  m_Size: {x: 1.2, y: 1.5}
+  m_Offset: {x: 0, y: 0.662}
+  m_Size: {x: 0.73, y: 1.2}
   m_Direction: 0
 --- !u!114 &3729731391740877115
 MonoBehaviour:
@@ -426,9 +429,9 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 99
   m_MaskInteraction: 0
-  m_Sprite: {fileID: 4253760402986164534, guid: 6dafb810c72e4b148b1d568a9808ebb2, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ae297123f091bbf4e8f1835eb98fb293, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -452,6 +455,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerCharacter
   rollCooldown: 0.12
+--- !u!114 &3863320199812245519
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34b44d3c5bd34c61b4a5df3a78e5c740, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerStatComponent
+  maxHp: 100
 --- !u!114 &2536336535114238382
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -495,7 +511,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e9f3dd70ca577940a7b91aa4b7d19ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry.Player.PlayerAttack
-  attackClip: {fileID: 7400000, guid: a05ad4fdb58ac2346b602900da0b8515, type: 2}
   attacks:
   - {fileID: 11400000, guid: 9e75bae284cc464186624341ce2c8c1e, type: 2}
   - {fileID: 11400000, guid: 9ff1f01ea4594667a9a2c5b118ab9e18, type: 2}
@@ -516,7 +531,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1922f3f88de8a504baa8dc3191c39f6d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerAnimation
---- !u!114 &3863320199812245519
+--- !u!114 &5400493633336363703
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -525,7 +540,43 @@ MonoBehaviour:
   m_GameObject: {fileID: 8352126505682791269}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 34b44d3c5bd34c61b4a5df3a78e5c740, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerStatComponent
-  maxHp: 100
+  m_Script: {fileID: 11500000, guid: 7b1b1cdb829944c3a73624ed2e48fa4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.AnimationClass.AnimationClipPlayer
+--- !u!114 &8998924862070523584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 590cc96e11056b64c9621a172ee39bf7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerParry
+  parryClip: {fileID: 7400000, guid: 7c2bf5549f8787b40a7f1991047d3c3c, type: 2}
+  parryDuration: 0.3
+  parryCooldown: 3
+  successCooldown: 0.2
+--- !u!114 &8136084522499016372
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8352126505682791269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90b9b33bb7916054eb4f87075517c7dd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerHitReaction
+  hurtClip: {fileID: 7400000, guid: a402ac4bc90998745b1897ed0d1ea379, type: 2}
+  knockdownClip: {fileID: 7400000, guid: 1c54c5eac25a3b6408b30b765cee5160, type: 2}
+  getUpClip: {fileID: 7400000, guid: 39c2baee9dd591c458aad311c1025607, type: 2}
+  normalHit:
+    duration: 0.2
+  heavyHit:
+    duration: 0.35
+  extraInvulnerability: 0.15
+  knockdownHoldDuration: 0.35

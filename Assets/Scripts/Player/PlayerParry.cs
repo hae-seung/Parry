@@ -1,0 +1,92 @@
+using Parry.AnimationClass;
+using UnityEngine;
+
+namespace Parry.PlayerClass
+{
+    [DisallowMultipleComponent]
+    [RequireComponent(typeof(AnimationClipPlayer))]
+    public sealed class PlayerParry : MonoBehaviour
+    {
+        private PlayerCharacter character;
+        private PlayerMovement movement;
+        private PlayerAttack attack;
+        private AnimationClipPlayer clipPlayer;
+
+        [Tooltip("패링 입력 시 클립 재생기로 재생할 애니메이션입니다.")]
+        [SerializeField] private AnimationClip parryClip;
+        [Tooltip("패링 시작 순간부터 적의 타격을 패링할 수 있는 시간(초)입니다. 클립 길이와 별개로 계산합니다.")]
+        [SerializeField, Min(0f)] private float parryDuration = 0.3f;
+        [Tooltip("패링 시도 시작부터 다음 패링까지의 시간(초)입니다.")]
+        [SerializeField, Min(0f)] private float parryCooldown = 3f;
+        [Tooltip("패링 성공 순간부터 다음 패링까지의 시간(초)입니다.")]
+        [SerializeField, Min(0f)] private float successCooldown = 0.2f;
+
+        private bool isParrying;
+        private float parryEndTime;
+        private float nextParryTime;
+
+        // 타격이 들어오는 순간에도 시간을 확인해 Update 실행 순서에 영향을 받지 않는다.
+        public bool IsParrying => isParrying && !character.IsDead && Time.time < parryEndTime;
+
+        private void Awake()
+        {
+            character = GetComponent<PlayerCharacter>();
+            movement = GetComponent<PlayerMovement>();
+            attack = GetComponent<PlayerAttack>();
+            clipPlayer = GetComponent<AnimationClipPlayer>();
+        }
+
+        private void Update()
+        {
+            if (isParrying && !IsParrying)
+                CancelParry();
+        }
+
+        private void OnDisable() => CancelParry();
+
+        public bool TryStartParry()
+        {
+            bool cooldownReady = Time.time >= nextParryTime;
+            
+            bool canStart = isActiveAndEnabled && cooldownReady && !character.IsDead && !character.IsHitReacting &&
+                !character.IsRolling && !IsParrying && clipPlayer.CanPlay && parryClip != null;
+            
+            if (!canStart)
+                return false;
+
+            // 일반 공격을 취소하고 같은 클립 재생기에 패링 클립을 연결한다.
+            if (attack != null && attack.IsAttacking)
+                attack.CancelAttack();
+
+            if (!clipPlayer.Play(parryClip))
+                return false;
+
+            isParrying = true;
+            parryEndTime = Time.time + parryDuration;
+            nextParryTime = Time.time + parryCooldown;
+            movement.CancelJump();
+            
+            return true;
+        }
+
+        public bool TryParryHit()
+        {
+            if (!isActiveAndEnabled || !IsParrying)
+                return false;
+
+            // 성공 순간부터 다음 패링까지의 쿨타임을 짧게 줄인다.
+            nextParryTime = Time.time + successCooldown;
+            
+            return true;
+        }
+
+        public void CancelParry()
+        {
+            isParrying = false;
+            
+            // 패링 종료가 이후에 시작한 다른 행동의 클립을 끊지 않도록 한다.
+            if (clipPlayer != null && clipPlayer.IsPlayingClip(parryClip))
+                clipPlayer.Stop();
+        }
+    }
+}

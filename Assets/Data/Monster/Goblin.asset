@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a2eea77796a7bc4fabe1c913a8c2dd9, type: 3}
+  m_Name: Goblin
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.MonsterClass.MonsterData
+  moveSpeed: 2
+  attacks:
+  - {fileID: 11400000, guid: 69d6b850ff56ef14bbe9f5c07674afa6, type: 2}
+  - {fileID: 11400000, guid: dea15a39989073a42bf177accac8a346, type: 2}
+  detection:
+    obstacleLayers:
+      serializedVersion: 2
+      m_Bits: 1
+    distance: 6
+    heightTolerance: 0.5
+  chase:
+    stopDistance: 1.2
+  combat:
+    combatExitDistance: 9
+    sightLossDuration: 3
+  wander:
+    radius: 3
+    waitDuration: 1
+    travelTimeout: 3
+    arrivalDistance: 0.1

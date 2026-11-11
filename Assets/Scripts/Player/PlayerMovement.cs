@@ -22,10 +22,22 @@ namespace Parry.PlayerClass
         private ContactFilter2D groundFilter;
         private float horizontalInput;
         private bool jumpRequested;
+        private float knockbackSpeed;
+        private float knockbackStartTime;
+        private float knockbackDuration;
 
         public bool IsGrounded { get; private set; }
         public int FacingDirection { get; private set; } = 1;
         public Vector2 Velocity => body.linearVelocity;
+
+        private float KnockbackVelocity
+        {
+            get
+            {
+                float progress = knockbackDuration > 0f ? (Time.time - knockbackStartTime) / knockbackDuration : 1f;
+                return Mathf.Lerp(knockbackSpeed, 0f, progress);
+            }
+        }
 
         private void Awake()
         {
@@ -54,17 +66,26 @@ namespace Parry.PlayerClass
                 body.linearVelocity = velocity;
                 return;
             }
+
+            // 피격 중에는 입력 이동 대신 감속하는 밀림만 적용하고, 수직 물리는 유지한다.
+            if (character.IsHitReacting)
+            {
+                velocity.x = KnockbackVelocity;
+                body.linearVelocity = velocity;
+                CancelJump();
+                return;
+            }
             
             if (character.IsRolling)
             {
-                velocity.x = FacingDirection * rollSpeed;
+                velocity.x = FacingDirection * rollSpeed + KnockbackVelocity;
                 body.linearVelocity = velocity;
                 return;
             }
 
             if (attack != null && attack.IsAttacking)
             {
-                velocity.x = 0f;
+                velocity.x = KnockbackVelocity;
                 body.linearVelocity = velocity;
                 CancelJump();
                 return;
@@ -81,6 +102,21 @@ namespace Parry.PlayerClass
                 FacingDirection = horizontalInput > 0f ? 1 : -1;
                 sr.flipX = FacingDirection < 0;
             }
+        }
+
+        internal void StartKnockback(int direction, float distance, float duration)
+        {
+            knockbackStartTime = Time.time;
+            knockbackDuration = duration;
+            knockbackSpeed = duration > 0f ? direction * distance * 2f / duration : 0f;
+        }
+
+        internal void StopKnockback()
+        {
+            knockbackDuration = 0f;
+            knockbackSpeed = 0f;
+            if (body != null)
+                body.linearVelocity = new Vector2(0f, body.linearVelocity.y);
         }
 
         private void CheckPlayerIsOnGround()
@@ -107,7 +143,7 @@ namespace Parry.PlayerClass
 
         private void MovePlayer(ref Vector2 velocity)
         {
-            velocity.x = horizontalInput * moveSpeed;
+            velocity.x = horizontalInput * moveSpeed + KnockbackVelocity;
             if (jumpRequested && IsGrounded)
             {
                 velocity.y = jumpSpeed;

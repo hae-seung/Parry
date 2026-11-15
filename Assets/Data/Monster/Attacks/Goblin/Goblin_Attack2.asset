@@ -15,9 +15,8 @@ MonoBehaviour:
   animationClip: {fileID: 7400000, guid: c3b939aa2cf77da499a990711c9e7193, type: 2}
   damage: 10
   attackType: 1
-  causesStagger: 1
+  canKnockback: 1
   knockbackDistance: 0.9
-  knocksDown: 1
   hitboxOffset: {x: 1.3963884, y: -0.3365245}
   hitboxSize: {x: 1.3365762, y: 0.8200488}
   distanceCondition: 0

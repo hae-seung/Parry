@@ -80,7 +80,6 @@ public static class VerifyTimedPlayerParry
             var attackData = new SerializedObject(testAttack);
             attackData.FindProperty("cooldown").floatValue = 0f;
             attackData.FindProperty("attackType").enumValueIndex = (int)MonsterAttackType.Normal;
-            attackData.FindProperty("knocksDown").boolValue = false;
             attackData.FindProperty("hitboxOffset").vector2Value = new Vector2(0.9f, 0f);
             attackData.FindProperty("hitboxSize").vector2Value = new Vector2(2f, 2f);
             attackData.ApplyModifiedPropertiesWithoutUndo();
@@ -115,7 +114,7 @@ public static class VerifyTimedPlayerParry
             float startCooldownEnd = (float)typeof(PlayerParry).GetField("nextParryTime", Private).GetValue(parry);
             Assert(Mathf.Abs(startCooldownEnd - Time.time - 3f) < 0.01f, "패링 시도 쿨타임이 3초가 아님");
             hp = stats.Hp;
-            character.TakeDamage(testAttack.Damage);
+            character.TakeDamage(new Parry.CombatClass.AttackHitContext(testAttack, attack.GetComponent<Monster>(), 1));
             Assert(stats.Hp == hp && parry.IsParrying, "플레이어 피격 진입점 패링 실패 또는 유효 시간 종료");
             float successCooldownEnd = (float)typeof(PlayerParry).GetField("nextParryTime", Private).GetValue(parry);
             Assert(Mathf.Abs(successCooldownEnd - Time.time - 0.2f) < 0.01f, "성공 쿨타임이 0.2초가 아님");

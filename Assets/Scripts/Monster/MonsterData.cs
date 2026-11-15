@@ -5,6 +5,15 @@ using UnityEngine;
 namespace Parry.MonsterClass
 {
     [Serializable]
+    public struct MonsterBaseStats
+    {
+        [Tooltip("생성 시 적용할 최대 체력입니다.")]
+        [Min(1f)] public float maxHp;
+        [Tooltip("추적과 배회에 사용하는 최대 수평 이동 속도입니다.")]
+        [Min(0f)] public float moveSpeed;
+    }
+
+    [Serializable]
     public struct MonsterDetectionSettings
     {
         [Tooltip("시야를 가리는 장애물과 이동 시 벽·지면을 검사할 레이어입니다. Trigger는 검사에서 제외합니다.")]
@@ -53,8 +62,11 @@ namespace Parry.MonsterClass
     [CreateAssetMenu(fileName = "MonsterData", menuName = "Parry/Monster Data")]
     public sealed class MonsterData : ScriptableObject
     {
-        [Tooltip("추적과 배회에 사용하는 최대 수평 이동 속도입니다. 초당 월드 단위입니다.")]
-        [SerializeField, Min(0f)] private float moveSpeed = 2f;
+        [Tooltip("몬스터 생성 시 초기화할 기본 스탯입니다.")]
+        [SerializeField] private MonsterBaseStats baseStats = new MonsterBaseStats
+        {
+            maxHp = 100f, moveSpeed = 2f
+        };
         [Tooltip("사용할 공격 데이터 목록입니다. 거리 조건과 쿨타임을 만족하는 공격 중 하나를 무작위로 선택합니다.")]
         [SerializeField] private List<MonsterAttackData> attacks = new List<MonsterAttackData>();
         [Tooltip("플레이어 감지 거리·높이와 장애물 검사 설정입니다.")]
@@ -75,7 +87,7 @@ namespace Parry.MonsterClass
             radius = 2f, waitDuration = 1f, travelTimeout = 3f, arrivalDistance = 0.05f
         };
 
-        public float MoveSpeed => moveSpeed;
+        public MonsterBaseStats BaseStats => baseStats;
         public List<MonsterAttackData> Attacks => attacks;
         public MonsterDetectionSettings Detection => detection;
         public MonsterChaseSettings Chase => chase;

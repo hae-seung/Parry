@@ -76,6 +76,7 @@ namespace Parry.MonsterClass
             // 목록에서 무작위 위치를 고르고, 저장된 실제 공격 인덱스를 가져온다.
             int randomIndex = Random.Range(0, availableIndices.Count);
             int selectedIndex = availableIndices[randomIndex];
+            
             MonsterAttackData selectedAttack = attacks[selectedIndex];
             
             //공격 애니메이션 실행

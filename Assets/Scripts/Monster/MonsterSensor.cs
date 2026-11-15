@@ -11,7 +11,7 @@ namespace Parry.MonsterClass
         private Collider2D bodyCollider;
         private Collider2D targetCollider;
 
-        [SerializeField] private PlayerCharacter target;
+        private PlayerCharacter target;
         private MonsterDetectionSettings settings;
         private bool initialized;
         private readonly RaycastHit2D[] sightHits = new RaycastHit2D[32];
@@ -27,8 +27,13 @@ namespace Parry.MonsterClass
         {
             movement = GetComponent<MonsterMovement>();
             bodyCollider = GetComponent<Collider2D>();
-            if (target != null)
-                targetCollider = target.GetComponent<Collider2D>();
+
+            if (target == null)
+            {
+                target = FindAnyObjectByType<PlayerCharacter>();
+            }
+            
+            targetCollider = target.GetComponent<Collider2D>();
         }
 
         private void OnEnable()

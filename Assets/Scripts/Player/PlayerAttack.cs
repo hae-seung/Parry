@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Parry.MonsterClass;
 using Parry.AnimationClass;
+using Parry.CombatClass;
 using UnityEngine;
 
 namespace Parry.PlayerClass
@@ -10,10 +11,15 @@ namespace Parry.PlayerClass
     {
         private PlayerCharacter character;
         private AnimationClipPlayer clipPlayer;
+        private PlayerBerseker berseker;
 
         [SerializeField] private List<PlayerAttackData> attacks = new List<PlayerAttackData>();
+        [SerializeField] private List<BerserkerAttackData> berserkerAttacks = new List<BerserkerAttackData>();
+        [Tooltip("버서커 공격의 최종 피해 중 참격으로 추가 저장할 비율(%)입니다.")]
+        [SerializeField, Range(0f, 100f)] private float berserkerStoredDamagePercent = 50f;
         [SerializeField, Min(0f)] private float comboResetDuration = 1f;
         [SerializeField] private LayerMask targetLayers;
+        [SerializeField] private GameObject thirdHitEffectPrefab;
 
         private readonly HashSet<Monster> hitTargetSet = new HashSet<Monster>();
         private readonly List<Collider2D> hitResults = new List<Collider2D>(16);
@@ -36,6 +42,7 @@ namespace Parry.PlayerClass
         {
             character = GetComponent<PlayerCharacter>();
             clipPlayer = GetComponent<AnimationClipPlayer>();
+            berseker = GetComponent<PlayerBerseker>();
 
             hitFilter = new ContactFilter2D();
             hitFilter.SetLayerMask(targetLayers);
@@ -44,10 +51,22 @@ namespace Parry.PlayerClass
 
         private void OnDisable() => CancelAttack();
 
-        private bool CanAttack() =>
-            !character.IsDead && !character.IsHitReacting && character.IsGrounded &&
-            !character.IsRolling && !character.IsParrying &&
-            isActiveAndEnabled && clipPlayer.CanPlay && attacks.Count > 0;
+        private bool CanAttack()
+        {
+            bool isActionLocked = character.IsDead || character.IsHitReacting || character.IsRoaring;
+            
+            bool isBusy = character.IsRolling || character.IsParrying;
+
+            if (isActionLocked)
+                return false;
+            
+            if (!character.IsGrounded || isBusy)
+                return false;
+
+            bool hasAttacks = attacks.Count > 0;
+            
+            return isActiveAndEnabled && clipPlayer.CanPlay && hasAttacks;
+        }
 
         public bool TryStartAttack()
         {
@@ -56,7 +75,9 @@ namespace Parry.PlayerClass
                 return false;
 
             if (!IsAttacking)
+            {
                 return StartAttack(CanContinueCombo ? attackIndex : 0);
+            }
 
             //3타 -> 1타로는 예약 불가
             //1타->2타->3타가 한묶음
@@ -72,7 +93,6 @@ namespace Parry.PlayerClass
         //다음 공격 예약
         public void OpenComboBuffer()
         {
-
             if (IsAttacking)
                 bCanReserveNextAttack = true;
         }
@@ -81,7 +101,8 @@ namespace Parry.PlayerClass
         {
             index %= attacks.Count;
 
-            PlayerAttackData nextAttack = attacks[index];
+            // 공격 시작 시 선택한 데이터는 모드가 끝나도 현재 공격이 끝날 때까지 유지한다.
+            PlayerAttackData nextAttack = berseker.IsBerserking ? berserkerAttacks[index] : attacks[index];
             if (nextAttack == null || nextAttack.AnimationClip == null)
                 return false;
 
@@ -97,11 +118,10 @@ namespace Parry.PlayerClass
             return true;
         }
 
-        // 실제 공격판정 이벤트가 들어올때
+        // 실제 공격판정을 내리라고 애니메이션으로부터 이벤트가 들어올때
         public void ApplyAttackHit()
         {
-
-            if (!isActiveAndEnabled || character.IsDead || !hitEventPending || currentAttack == null)
+            if (!isActiveAndEnabled || character.IsDead || !hitEventPending)
                 return;
 
             hitEventPending = false;
@@ -118,22 +138,50 @@ namespace Parry.PlayerClass
 
             foreach (Collider2D hit in hitResults)
             {
-                Monster target = hit.GetComponentInParent<Monster>();
+                Monster target = hit.GetComponent<Monster>();
+                
                 if (target == null || !target.isActiveAndEnabled || target.IsDead || !hitTargetSet.Add(target))
                     continue;
+                
+                MonsterHitContext hitContext = character.Stats.CreateMonsterHit(damage, PlayerAttackType.Normal);
+                if (berseker.IsBerserking)
+                {
+                    AddBerserkerInfo(ref hitContext);
+                }
 
-                target.TakeDamage(damage);
+                target.TakeDamage(hitContext);
+
+                // 3타가 실제로 적중한 대상마다 한 번만 표시한다.
+                if (attackIndex == 2)
+                {
+                    MakeThirdAttackEffect(hit.bounds.center);
+                }
             }
 
             //실제 몬스터를 때린경우에만 콤보 이어지도록
-            attackIndex = hitTargetSet.Count > 0 ? attackIndex + 1 : 0;
+            if (hitTargetSet.Count > 0)
+            {
+                attackIndex += 1;
+                character.PlayHitStop();
+            }
+            else
+            {
+                attackIndex = 0;
+            }
+        }
+
+        private void AddBerserkerInfo(ref MonsterHitContext context)
+        {
+            context.IsBerserking = true;
+            context.Berseker = berseker;
+
+            context.SlashStackCount = berserkerAttacks[attackIndex].SlashStackCount;
+            context.StoredDamage = context.Damage * berserkerStoredDamagePercent * 0.01f;
         }
 
         // 공격 클립 끝의 Animation Event에서 호출한다.
         public void EndAttackMotion()
         {
-
-
             if (!bIsAttacking)
                 return;
 
@@ -162,10 +210,16 @@ namespace Parry.PlayerClass
             currentAttack = null;
             lastAttackTime = float.NegativeInfinity;
             
-            if (clipPlayer != null)
-                clipPlayer.Stop();
+            clipPlayer.Stop();
         }
 
+        private void MakeThirdAttackEffect(Vector3 pos)
+        {
+            GameObject effect = ObjectPoolManager.Instance.SpawnObject(thirdHitEffectPrefab, pos);
+            
+            effect.GetComponent<SpriteRenderer>().flipX = attackDirection < 0;
+        }
+        
         private Vector2 GetHitboxCenter()
         {
             Vector2 offset = currentAttack.HitboxOffset;
@@ -174,7 +228,7 @@ namespace Parry.PlayerClass
 
         private void OnDrawGizmos()
         {
-            if (!IsAttacking || currentAttack == null)
+            if (!IsAttacking)
                 return;
 
             Color previousColor = Gizmos.color;

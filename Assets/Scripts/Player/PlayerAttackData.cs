@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Parry.PlayerClass
 {
     [CreateAssetMenu(fileName = "PlayerAttack", menuName = "Parry/Player Attack Data")]
-    public sealed class PlayerAttackData : ScriptableObject
+    public class PlayerAttackData : ScriptableObject
     {
         [SerializeField, Min(0f)] private float damage = 20f;
         [SerializeField] private Vector2 hitboxOffset = new Vector2(0.9f, 0f);

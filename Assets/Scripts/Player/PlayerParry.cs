@@ -5,12 +5,19 @@ namespace Parry.PlayerClass
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(AnimationClipPlayer))]
+    [RequireComponent(typeof(PlayerParryGauge))]
     public sealed class PlayerParry : MonoBehaviour
     {
         private PlayerCharacter character;
         private PlayerMovement movement;
         private PlayerAttack attack;
         private AnimationClipPlayer clipPlayer;
+        private PlayerParryGauge gauge;
+        
+        [SerializeField] private GameObject shieldBubblePrefab;
+        [SerializeField] private GameObject parryHitPrefab;
+        [SerializeField] private Vector3 shieldEffectOffset;
+        
 
         [Tooltip("패링 입력 시 클립 재생기로 재생할 애니메이션입니다.")]
         [SerializeField] private AnimationClip parryClip;
@@ -34,6 +41,7 @@ namespace Parry.PlayerClass
             movement = GetComponent<PlayerMovement>();
             attack = GetComponent<PlayerAttack>();
             clipPlayer = GetComponent<AnimationClipPlayer>();
+            gauge = GetComponent<PlayerParryGauge>();
         }
 
         private void Update()
@@ -46,24 +54,21 @@ namespace Parry.PlayerClass
 
         public bool TryStartParry()
         {
-            bool cooldownReady = Time.time >= nextParryTime;
-            
-            bool canStart = isActiveAndEnabled && cooldownReady && !character.IsDead && !character.IsHitReacting &&
-                !character.IsRolling && !IsParrying && clipPlayer.CanPlay && parryClip != null;
+            bool canStart = CheckCanParry();
             
             if (!canStart)
                 return false;
 
             // 일반 공격을 취소하고 같은 클립 재생기에 패링 클립을 연결한다.
-            if (attack != null && attack.IsAttacking)
+            if (attack.IsAttacking)
                 attack.CancelAttack();
 
-            if (!clipPlayer.Play(parryClip))
-                return false;
+            clipPlayer.Play(parryClip);
 
             isParrying = true;
             parryEndTime = Time.time + parryDuration;
             nextParryTime = Time.time + parryCooldown;
+            
             movement.CancelJump();
             
             return true;
@@ -76,8 +81,21 @@ namespace Parry.PlayerClass
 
             // 성공 순간부터 다음 패링까지의 쿨타임을 짧게 줄인다.
             nextParryTime = Time.time + successCooldown;
+            gauge.GainOnParrySuccess();
             
             return true;
+        }
+        
+        public void PlaySuccessEffects(Vector3 monsterPosition)
+        {
+            //플레이어 패링 성공 방패 이펙트
+            ObjectPoolManager.Instance.SpawnObject(
+                shieldBubblePrefab,
+                transform.position + shieldEffectOffset,
+                transform);
+
+            //패링 성공 몬스터에게 데미지 이펙트
+            ObjectPoolManager.Instance.SpawnObject(parryHitPrefab, monsterPosition);
         }
 
         public void CancelParry()
@@ -85,8 +103,25 @@ namespace Parry.PlayerClass
             isParrying = false;
             
             // 패링 종료가 이후에 시작한 다른 행동의 클립을 끊지 않도록 한다.
-            if (clipPlayer != null && clipPlayer.IsPlayingClip(parryClip))
+            if (clipPlayer.IsPlayingClip(parryClip))
                 clipPlayer.Stop();
+        }
+
+        private bool CheckCanParry()
+        {
+            bool isActionLocked = character.IsDead || character.IsHitReacting || character.IsRoaring;
+            // 일반 공격 취소 패링은 허용한다.
+            bool isBusy = character.IsRolling || IsParrying;
+
+            if (isActionLocked || isBusy)
+                return false;
+
+            bool cooldownReady = Time.time >= nextParryTime;
+            if (!cooldownReady)
+                return false;
+
+            bool animationReady = clipPlayer.CanPlay && parryClip != null;
+            return isActiveAndEnabled && animationReady;
         }
     }
 }

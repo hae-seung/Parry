@@ -20,6 +20,7 @@ public static class VerifyMonsterAttackPreview
     public static async Task<string> Run()
     {
         Assert(!Application.isPlaying, "편집 모드에서 실행하세요.");
+        Selection.activeGameObject = UnityEngine.Object.FindAnyObjectByType<MonsterBrain>().gameObject;
         MonsterAttackPreviewWindow.Open();
         await Task.Delay(200);
         var window = Resources.FindObjectsOfTypeAll<MonsterAttackPreviewWindow>().First();

@@ -31,6 +31,9 @@ namespace Parry.AnimationClass
 
         private void Update()
         {
+            if (Time.timeScale == 0f && animationGraph.GetTimeUpdateMode() != DirectorUpdateMode.UnscaledGameTime)
+                return;
+
             if (IsPlaying && !clipPlayable.GetAnimationClip().isLooping &&
                 clipPlayable.GetTime() >= clipPlayable.GetAnimationClip().length)
             {
@@ -54,13 +57,16 @@ namespace Parry.AnimationClass
                 animationGraph.Destroy();
         }
 
-        public bool Play(AnimationClip clip, bool holdLastFrame = false)
+        public bool Play(AnimationClip clip, bool holdLastFrame = false, bool unscaledTime = false)
         {
             if (!CanPlay || clip == null)
                 return false;
 
             AnimationClipPlayable previousClip = clipPlayable;
             this.holdLastFrame = holdLastFrame;
+            animationGraph.SetTimeUpdateMode(unscaledTime
+                ? DirectorUpdateMode.UnscaledGameTime
+                : DirectorUpdateMode.GameTime);
             
             clipPlayable = AnimationClipPlayable.Create(animationGraph, clip);
             clipPlayable.SetTime(0);
@@ -74,6 +80,12 @@ namespace Parry.AnimationClass
             animationGraph.Play();
             
             return true;
+        }
+
+        public void SetSpeed(float speed)
+        {
+            if (IsPlaying)
+                clipPlayable.SetSpeed(speed);
         }
 
         public void Stop()

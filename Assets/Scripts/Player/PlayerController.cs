@@ -11,5 +11,6 @@ namespace Parry.PlayerClass
         {
             Character = GetComponent<PlayerCharacter>();
         }
+
     }
 }

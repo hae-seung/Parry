@@ -29,6 +29,7 @@ namespace Parry.PlayerClass
         public bool IsGrounded { get; private set; }
         public int FacingDirection { get; private set; } = 1;
         public Vector2 Velocity => body.linearVelocity;
+        internal bool HasPendingJump => jumpRequested;
 
         private float KnockbackVelocity
         {
@@ -75,17 +76,26 @@ namespace Parry.PlayerClass
                 CancelJump();
                 return;
             }
-            
+
             if (character.IsRolling)
             {
-                velocity.x = FacingDirection * rollSpeed + KnockbackVelocity;
+                velocity.x = FacingDirection * rollSpeed;
                 body.linearVelocity = velocity;
                 return;
             }
 
-            if (attack != null && attack.IsAttacking)
+            // 포효 중에는 이전부터 누르던 이동 입력도 적용하지 않는다.
+            if (character.IsRoaring)
             {
-                velocity.x = KnockbackVelocity;
+                velocity.x = 0f;
+                body.linearVelocity = velocity;
+                CancelJump();
+                return;
+            }
+
+            if (attack.IsAttacking)
+            {
+                velocity.x = 0f;
                 body.linearVelocity = velocity;
                 CancelJump();
                 return;
@@ -108,6 +118,7 @@ namespace Parry.PlayerClass
         {
             knockbackStartTime = Time.time;
             knockbackDuration = duration;
+            
             knockbackSpeed = duration > 0f ? direction * distance * 2f / duration : 0f;
         }
 
@@ -115,8 +126,8 @@ namespace Parry.PlayerClass
         {
             knockbackDuration = 0f;
             knockbackSpeed = 0f;
-            if (body != null)
-                body.linearVelocity = new Vector2(0f, body.linearVelocity.y);
+            
+            body.linearVelocity = new Vector2(0f, body.linearVelocity.y);
         }
 
         private void CheckPlayerIsOnGround()

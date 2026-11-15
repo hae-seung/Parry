@@ -20,7 +20,8 @@ public static class VerifyPlayerAttackPreview
     public static async Task<string> Run()
     {
         Assert(!Application.isPlaying, "편집 모드에서 실행하세요.");
-        MonsterAttackPreviewWindow.OpenPlayer();
+        Selection.activeGameObject = UnityEngine.Object.FindAnyObjectByType<PlayerAttack>().gameObject;
+        MonsterAttackPreviewWindow.Open();
         await Task.Delay(200);
         var window = Resources.FindObjectsOfTypeAll<MonsterAttackPreviewWindow>().First();
         var player = UnityEngine.Object.FindAnyObjectByType<PlayerAttack>();

@@ -48,8 +48,8 @@ await Task.Delay(600);Assert(brain.State is MonsterWanderState,"Sustained height
 p.transform.position=new Vector3(body.position.x+3,originalY,0);Physics2D.SyncTransforms();await Task.Delay(100);Assert(brain.State is MonsterChaseState,"Did not reacquire after sight-loss combat exit");var injected=new InjectedState(); brain.ChangeState(injected); await Task.Delay(180); Assert(ReferenceEquals(brain.State,injected) && injected.Enters==1 && injected.Ticks>0,"Injected state not executed");
 go.SetActive(false); Assert(injected.Exits==1 && brain.State==null,"Disable did not exit injected state"); go.SetActive(true); Assert(brain.State is MonsterWanderState,"Reenable did not enter Wander");
 var monster=go.GetComponent<Monster>(); var beforeDeath=new InjectedState(); brain.ChangeState(beforeDeath);
-monster.TakeDamage(1); Assert(ReferenceEquals(brain.State,beforeDeath),"Nonlethal hit changed state");
-monster.TakeDamage(99999); Assert(!go.activeSelf && beforeDeath.Exits==1 && brain.State==null,"Death did not disable and clear state");
+monster.TakeDamage(new Parry.CombatClass.MonsterHitContext(1)); Assert(ReferenceEquals(brain.State,beforeDeath),"Nonlethal hit changed state");
+monster.TakeDamage(new Parry.CombatClass.MonsterHitContext(99999)); Assert(!go.activeSelf && beforeDeath.Exits==1 && brain.State==null,"Death did not disable and clear state");
 var idleAfterDeath=new InjectedState(); brain.ChangeState(idleAfterDeath);
 typeof(MonsterBrain).GetMethod("Update",BindingFlags.Instance|BindingFlags.NonPublic).Invoke(brain,null);
 Assert(idleAfterDeath.Ticks==0,"Dead Brain ticked state");return "PASS: autonomous sensor with Brain disabled, cached last-seen retention, injected state lifecycle, same-state no-op, disable/reenable, same-floor detection, wall occlusion, height exclusion, Chase movement, no spawn tether, distance combat exit, local wander movement, wall/ledge avoidance, timed sight-loss combat exit, reacquisition, death disable/cleanup, dead Brain skips state Tick";

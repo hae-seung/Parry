@@ -34,40 +34,20 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
     private Vector2Field sizeField;
     private Vector3Field previewPositionField;
 
-    [MenuItem("Tools/Parry/Monster Attack Preview")]
+    [MenuItem("Tools/Parry/Attack Preview")]
     public static void Open()
     {
         var window = GetWindow<MonsterAttackPreviewWindow>("공격 판정 미리보기");
         window.minSize = new Vector2(400f, 520f);
-        var monster = Object.FindAnyObjectByType<MonsterBrain>();
-        if (Selection.activeGameObject != null && Selection.activeGameObject.TryGetComponent<MonsterBrain>(out var selectedMonster))
-            monster = selectedMonster;
-        if (monster != null)
+        GameObject selected = Selection.activeGameObject;
+        if (selected != null)
         {
-            window.source = monster.gameObject;
+            window.source = selected;
             if (window.sourceField != null)
             {
-                window.sourceField.SetValueWithoutNotify(window.source);
-                window.SetSource(window.source);
+                window.sourceField.SetValueWithoutNotify(selected);
+                window.SetSource(selected);
             }
-        }
-    }
-
-    [MenuItem("Tools/Parry/Player Attack Preview")]
-    public static void OpenPlayer()
-    {
-        Open();
-        var window = GetWindow<MonsterAttackPreviewWindow>();
-        PlayerAttack player = null;
-        if (Selection.activeGameObject != null)
-            player = Selection.activeGameObject.GetComponent<PlayerAttack>();
-        if (player == null)
-            player = Object.FindAnyObjectByType<PlayerAttack>();
-        window.source = player != null ? player.gameObject : null;
-        if (window.sourceField != null)
-        {
-            window.sourceField.SetValueWithoutNotify(window.source);
-            window.SetSource(window.source);
         }
     }
 
@@ -198,14 +178,17 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         {
             // 런타임 공격 컴포넌트에 등록된 목록을 그대로 사용한다.
             var data = new SerializedObject(player);
-            var attackList = data.FindProperty("attacks");
-            for (int i = 0; i < attackList.arraySize; i++)
+            foreach (string listName in new[] { "attacks", "berserkerAttacks" })
             {
-                var attack = attackList.GetArrayElementAtIndex(i).objectReferenceValue as PlayerAttackData;
-                if (attack == null)
-                    continue;
-                attacks.Add(attack);
-                names.Add(attack.name);
+                var attackList = data.FindProperty(listName);
+                for (int i = 0; i < attackList.arraySize; i++)
+                {
+                    var attack = attackList.GetArrayElementAtIndex(i).objectReferenceValue as PlayerAttackData;
+                    if (attack == null)
+                        continue;
+                    attacks.Add(attack);
+                    names.Add(attack.name);
+                }
             }
         }
         attackField.choices = names;

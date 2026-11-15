@@ -1,6 +1,183 @@
 # Parry 개발 세션 인계
 
-갱신: 2026-11-12 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+갱신: 2026-11-15 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+
+## 현재 구현과 대화 — 2026-11-15 우선 읽기
+
+이 절과 실제 최신 코드가 이전 기록보다 우선한다. 사용자는 다음 세션 인계를 요청했다. 코드·프리팹·씬은 이번 인계에서 수정하지 않았고, 다음 요청을 기다린다.
+
+### 사용자 작업 방식과 상태 관리 최종 합의
+
+- 사용자가 코드·프리팹·씬·클립을 직접 계속 수정한다. 작업 전 관련 실제 파일과 Git 상태를 다시 읽고 보존한다. main에 수정·삭제·미추적 파일이 많다. 이번 세션에서 커밋·푸시하지 않았다.
+- 상태 관리는 현재의 각 기능별 if/Can 함수 구조를 유지하기로 최종 합의했다. partial 클래스, PlayerCharacter.Actions.cs, 공통 PlayerAction/PlayerActionState switch 허용표는 도입 후 철회해 현재 없다. 상태 머신은 설명만 했고 채택하지 않았다. 다시 구조를 전환하지 않는다.
+- PlayerCharacter.Attack/Parry/Skill은 각각 TryStartAttack/TryStartParry/ToggleBerserker 호출만 전달한다. 행동 조건은 담당 기능 내부에서 한 번 검사한다. 호출부에 포효/사망 검사를 중복 추가하지 않는다.
+- 긴 조건식은 의미별 지역 bool(isActionLocked/isBusy/cooldownReady/animationReady 등)과 짧은 if로 나눈다. 사용자가 PlayerBerseker 진입 조건을 CanEnterBerserker()로 분리하고 일부 조건을 직접 if로 편집했다. 최신 순서와 문체를 존중한다.
+- 정상 흐름에서 불가능한 상황을 가정한 방어 코드와 중복 검사를 줄이는 것을 선호한다. 피격 분기의 berseker.EndRoar()는 제거했다. 필수 참조의 null 대체 조건·재생 전 검사 직후 Play 반환값 재검사·IsHitReacting에 포함되는 IsFainted 진입 중복 검사·미사용 damageFeedback 캐시도 제거했다.
+- 실제 필요한 상태 검사·공격 이벤트 중복 방지·풀 중복 반환 방지·비활성화 정리는 유지한다. 특히 포효 중 R 재입력 차단은 필요하다. 버서커는 이미 켜져 있어 그 R은 재진입이 아니라 즉시 종료로 해석되며, 종료 후 쿨타임이 이를 대신 막아주지는 못한다.
+- 질문과 구현 요청을 구분한다. 불필요한 인터페이스·상태 계층·인스턴스 역조회 Dictionary를 추가하지 않는다.
+
+### 패링 게이지 — 구현됨
+
+- Assets/Scripts/Player/PlayerParryGauge.cs를 Player 루트에 연결했다. CurrentGauge/MaxGauge/NormalizedGauge/AttackMultiplier, GainOnParrySuccess(), TryConsume(float)를 제공한다.
+- 코드 기본값: 최대 100, 패링당 15 획득, 초당 3 감소, 최대 게이지에서 일반 공격 피해 +50%. 임시 조절값이며 확정 밸런스가 아니다.
+- **현재 사용자 Player.prefab 값: maxGauge=100, gaugePerParry=15, decayPerSecond=0, maxAttackBonus=0.5, currentGauge=100. 단 Awake가 currentGauge=0으로 초기화하므로 Inspector의 100이 시작 게이지로 사용되지는 않는다.** 요청 없이 이 값을 바꾸지 않는다.
+- PlayerParry.TryParryHit 성공 시 게이지 획득. PlayerStatComponent.CreateMonsterHit에서 Normal 공격만 현재 게이지 배율을 적용한다. 패링 반격은 별도 스탯을 유지한다.
+- 게이지 감소·소비에 따라 배율도 즉시 줄어든다. 부족한 소비는 실패하며 일부만 소비하지 않는다. 게이지 UI는 아직 없다.
+
+### 버서커 — 현재 구현
+
+- 정확한 클래스/파일 이름은 PlayerBerseker / Assets/Scripts/Player/PlayerBerseker.cs다. 철자를 임의로 바꾸지 않는다.
+- 기존 InputSystem_Actions의 Player/Skill(<Keyboard>/r) → MyController.OnSkill(performed만) → PlayerCharacter.Skill → ToggleBerserker. Player.prefab에 UnityEvent 연결을 완료했다.
+- 코드 기본값: gaugeCost=70, duration=10초(int), cooldown=3초. **현재 사용자 Player.prefab 실제 값은 gaugeCost=1, duration=10, cooldown=30초**다. 원래 설계 비용 70과 시험 에셋 값 1을 혼동하지 않는다.
+- 진입 조건: 비활성/사망/포효 중 불가. 쿨타임, 구르기·공격·패링 중, 공중·점프 예약·수직 속도, 피격 반응 중, 게임 정지 중, 클립 재생 가능 여부를 검사한다. 현재 CanEnterBerserker의 animationReady는 사용자가 clipPlayer.CanPlay만 남겼다. roarClip null 검사를 임의로 복원하지 않는다.
+- 진입 성공 시 비용을 소비하고 roaring=true, 포효 재생, Time.timeScale=0, IsBerserking=true, RemainingSeconds=duration, 오러 풀 생성 순으로 진행한다. 다른 동작을 취소하고 진입하는 구조가 아니다.
+- 포효 동안 공격·패링·점프·구르기·R 종료 입력을 막는다. 이전부터 누르던 이동도 포효 중에는 적용하지 않는다. 게임 시간이 멈추므로 정상 전투에서는 새 피격이 발생하지 않는다. 포효 종료 직후에는 별도 무적 없이 적의 진행 중 공격이 이어질 수 있다.
+- EndRoar()는 포효 클립 끝 Animation Event 전용: StopRoar()로 roaring=false/기존 timeScale 복구/클립 Stop 후 Countdown 코루틴 시작. 버서커 지속시간은 **포효 종료 후부터** 게임 시간 1초마다 1 감소한다.
+- R 재입력은 포효가 끝난 뒤 EndBerserker(true), 0초 자동 종료는 EndBerserker(false). 종료 시 nextBerserkerTime=Time.time+cooldown, 오러 반환, 코루틴 정리. 쿨타임 중에는 게이지가 충분해도 소비/재진입 불가다.
+- OnDisable → EndBerserker(false). 포효 중 비활성화라면 StopRoar로 게임 정지를 복구한다. 정상 종료 때 포효는 이미 끝났으므로 다시 EndRoar를 호출하지 않는다.
+- ReleaseStoredSlashes/DiscardStoredSlashes는 아직 빈 함수다. 참격 저장/실제 발동/처형, 피격 시간 감소, 패링 시간 회복, 버서커 중 게이지 획득 차단, 전용 1.5배속 공격 클립, HUD는 아직 미구현이다. 현재 패링은 버서커 중에도 기존 GainOnParrySuccess를 호출하며 이는 후속 구현 대상이다.
+
+### 포효 클립과 게임 정지
+
+- Assets/Animations/Player/Player_BerserkerRoar.anim: 사용자가 지정한 HeroKnight_78 → _47 → _46. **현재 사용자 편집 후 길이 약 0.45714286초, 끝 EndRoar 이벤트도 같은 시각**이다. 초기 생성 시 약 0.64초였던 기록을 최신으로 사용하지 않는다.
+- AnimationClipPlayer.Play(AnimationClip, bool holdLastFrame=false, bool unscaledTime=false)는 매 재생에 Graph 시간 모드를 설정한다. 포효는 Play(roarClip,false,true), 나머지 클립은 GameTime을 사용한다.
+- Time.time은 누적 게임 시간이며 되돌리지 않는다. timeScaleBeforeRoar는 정지 직전 배율을 저장해 EndRoar/비활성화에서 복구하는 값이다. 현재 코드는 항상 1로 고정하는 대신 기존 배율을 복원한다.
+- MonsterBrain.Update는 Time.timeScale==0이면 Tick하지 않는다. 물리와 몬스터 클립·일반 VFX도 게임 시간 기준으로 멈춘다.
+- DamageNumbers의 네 프리팹(Normal/Critical/Parry/ParryCritical)은 unscaledTime=false로 바꿔 포효 중 숫자도 정지를 따른다. 과거 unscaledTime=true 설명은 이전 기록이다.
+
+### 오러와 타격 VFX
+
+- Berserker_Aura.prefab 및 동명 anim/controller: Heal_Aura Small 18프레임 기반 15fps 반복. SpriteRenderer 색 (1,0.08,0.06,0.85), Player Sorting Layer/order -1, 발밑 기준 피벗. 현재 실제 에셋을 우선한다.
+- 버서커가 auraPrefab/auraOffset/auraInstance를 관리한다. 기존 ObjectPoolManager.SpawnObject(prefab, transform.position+auraOffset, transform)로 추종시키고 종료 시 Release한다. 반복 오러는 PooledObject이고 자동 종료 EndEffect 이벤트는 없다.
+- 일반 공격 3타(attackIndex==2)에만 Hit_Directional을 표시한다. PlayerAttack.MakeThirdAttackEffect(Vector3 pos), hit.GetComponent<Monster>(), hit.bounds.center를 사용하고 attackDirection으로 flipX한다. 사용자 제거한 랜덤 오프셋·프리팹 null 검사를 복원하지 않는다.
+- Hit_Spark.prefab은 준비만 했으며 전투에는 넣지 않기로 했다. 필요할 때 나중에 연결한다.
+- PlayerParry는 Shield_Bubble과 serialized parryHitPrefab(Hit_Parry)을 모두 가진다. PlayerCharacter 패링 성공 분기에서 PlaySuccessEffects(context.Attacker.transform.position). 버블은 플레이어 위치+offset/부모 추종, Hit_Parry는 공격한 몬스터 월드 위치에 생성한다. EndEffect로 풀 반환한다.
+- 기존 PlayerCharacter.PlayHitStop은 시간 정지가 아니라 공격 적중 후 남은 클립의 0.7배속 감속+ShakePlayerAttack이다. 지금은 실제 적중에서만 호출하므로 IsAttacking 재검사를 제거했다. 전역 히트스톱은 사용하지 않는다. 포효 일시정지와 혼동하지 않는다.
+- VFX 팩은 Assets/AssetStoreImport/AW_VFX_Mega_Pack_Free. 메타데이터 effects.json/asset_list.txt, 기본 15fps. 라이선스 개인·상업 이용/수정 허용, 에셋 자체 재배포·재판매/AI 학습/NFT 금지. LICENSE.txt를 참고한다.
+
+### 풀과 허수아비
+
+- ObjectPoolManager는 원본 prefab → Pool Dictionary, Pool은 비활성 List<GameObject>, maxSize 기본16. PooledObject가 소유 Pool을 직접 참조한다. CreateNewObjectAndInsert에서 AddComponent 반환값 대입은 반영됐다.
+- EffectLifetime : PooledObject, EndEffect()=>Release(). 인스턴스 역조회 Dictionary/IPoolable/자기 프리팹 키는 없다. 보관 객체를 임의 Destroy한 경우 건너뛰는 기능은 현재 없다.
+- Assets/Prefabs/Monster/TrainingDummy.prefab: 고블린 외형, AI·공격 없음, 체력 100만, TrainingDummy.OnEnable 초기화와 ContextMenu Reset Health. Kinematic/FreezeAll/Trigger이므로 바닥 충돌로 서 있는 것이 아니라 처음 배치한 높이에 고정된다.
+- SampleScene에서 플레이어 시작 위치 오른쪽 약3유닛에 배치했다. 플레이어 공격 필터는 Trigger도 감지한다.
+
+### 확정 설계와 다음 구현 범위
+
+- 스킬 작업 시 BERSERKER-DESIGN.md를 먼저 읽는다. 최신 구현 범위를 갱신했다. 원래 기획서는 C:/Users/USER/Documents/Codex/2026-10-24/skill-creator-c-users-user-codex/outputs/parry-action/GAME-DESIGN.md이며 이전 스킬을 버서커 설계로 교체해두었다. 최신 구현 현황은 이 인계와 실제 코드가 우선한다.
+- 일반 상태 패링은 게이지 획득, 버서커 중 패링은 게이지 획득 없이 시간 회복, 실제 피격은 시간 감소가 목표다. 후자의 연결은 아직 없다.
+- 참격은 **몬스터 쪽 별도 기능이 대상별 피해 목록을 저장**하고, 해당 PlayerBerseker의 발동/소멸 이벤트를 구독하는 구조로 구현하기로 했다. 첫 저장 시 구독, 발동/소멸/사망/비활성화 시 구독 정리. 버서커는 신호만 보내고 대상별 목록을 직접 관리하지 않는다. 이벤트 자체도 아직 미구현이다.
+- 일반1·2타 각1개, 3타2개, 패링 반격1개 저장. 저장 개수 상한 없음. 각 적중의 최종 피해 중 일정 비율을 저장하고 3타는 두 개에 나눠 담는다. 발동 때 난수/치명타/공격력을 재계산하지 않는다.
+- 수동 종료는 전 대상 참격 순차 발동, 시간 소진은 미사용 참격 소멸. 직접 피해+참격 저장 후 저장합계>=현재 체력이면 해당 대상만 자동 처형하며 모드/다른 대상은 유지한다. 발동 목록을 저장에서 분리하고 사망 후 후속 타격은 종료한다.
+- 버서커 전용1·2·3타는 기존 모션 시간1/1.5 압축과 이벤트 비례 이동을 계획했다. 적중0.7 감속 유지 시 원본 대비 약1.05배. 아직 제작하지 않았다.
+- R 홀드 충전·3단계 발도·입력 시작 공격력 고정·게이지 칸·참격 개수 상한·시간 만료 자동 발동은 철회했다.
+
+### 검증과 작업 종료 상태
+
+- 단계별 검증: 실제 패링 Hit_Parry 위치/피해 방어/애니메이션 종료 반환/재사용, 게이지 성공 시 획득/상한/소비/배율/자연 감소, 허수아비 피격/위치 고정을 확인했다.
+- 최근 검증은 VerifyRoarPause에서 실제 사용자 비용을 읽어 포효 중 내부/경유 공격·패링·R 차단, 진입 불가 상태의 미소비, 게임/몬스터 정지, 포효 종료·타이머 시작, 비활성화 시 배율 복구를 확인했다. VerifyPlayerCleanup은 공격→패링/구르기 취소와 실제 피격 중단을 확인했다. VerifyBerserkerCooldown은 수동/자동 종료 쿨타임, 거절 시 미소비, 쿨타임 만료 재진입을 통과했다.
+- 조건식을 의미별 bool로 분리한 뒤 컴파일 completed를 확인했다. 이후 사용자 직접 편집(프리팹 비용1/쿨타임30/감소0, 클립 길이 변경 등)이 있으므로 과거 테스트가 최신 파일 전체를 보장한다고 말하지 않는다. 이번 인계에서는 새 Play 테스트를 실행하지 않았다.
+- 마지막 확인: Unity 6000.6.7f1, 포트37800, ready, compiling=false, playMode=stopped, runInBackground=false. 프로젝트 D:/GitHub/Parry. CLI 명령은 --project-path를 지정하며 샌드박스에서는 연결 불가할 수 있어 필요한 명령을 권한 상승 실행했다.
+- AgentScripts는 Assets 밖의 수동 생성/검증 도구다. BuildBersekerInput/BuildBerserkerAura/BuildBerserkerRoar, VerifyPlayerParryGauge/VerifyRoarPause/VerifyPlayerCleanup/VerifyBerserkerCooldown 등이 있다. 과거 VerifyBersekerDuration/BuildBerserkerRoar.Verify는 진입 규칙·포효 정지·쿨타임 추가 이전 가정을 포함하므로 그대로 성공한다고 보장하지 않는다. 생성 도구로 사용자 에셋을 덮어쓰지 않는다.
+- Play 검증 중 변경한 설정/객체는 종료·정리한다. Edit 모드 임시 객체는 자동 제거되지 않을 수 있다. 기존 씬 객체를 임의 삭제하지 않는다.
+- 과거 TMP 에디터 null 대상 오류는 임시 정리한 이력이 있고 Animator Graphs.Edge.WakeUp 오류는 Animator 창을 닫아 우회했으나 근본 원인은 미확정이다. 필요하면 아래 이전 기록을 참고한다.
+- 사용자는 다음 세션에서 현재 상태를 읽고 다음 요청을 기다리기를 원한다.
+
+## 현재 구현과 대화 — 2026-11-14 우선 읽기
+
+이 절과 실제 코드가 최신 기준이다. 아래 2026-11-12 기록은 당시 상태이며, 특히 클래스 이름·피해 전달·구르기·피드백 설명은 이 절을 우선한다. 사용자는 세션 인계를 요청했다. 다음 요청을 기다린다.
+
+### 작업 방식과 사용자 의도
+
+- 사용자가 계속 코드·클립·프리팹·씬을 직접 편집한다. 다음 작업 전에 Git 상태와 관련 실제 코드를 읽고 사용자 변경을 보존한다. 현재 main이며 수정·삭제·미추적 파일이 많다. 이 대화에서 커밋·푸시는 하지 않았다.
+- 클래스는 이름과 역할에 맞게 구성하고, 불필요한 중계·방어 코드·매 프레임 감시를 줄이는 것을 선호한다. 질문에 대한 설명과 구현 요청을 구분한다.
+- 플레이어는 프리팹이므로 씬 카메라를 프리팹 Inspector에 직접 연결하는 구조를 원하지 않는다. 카메라 소유 구조를 여러 번 바꿨으며 최종 사용자 편집은 아래 싱글톤 구조다. 이전 중간 구조로 되돌리지 않는다.
+- 마지막 대화에서는 namespace를 설명했다. C# using은 파일 포함이 아니며 다른 파일로 전파되지 않는다. 같은 namespace의 타입은 여러 파일에서 선언 가능하고 private 접근 범위는 별개다. 사용자가 요청해 전투용 enum·구조체를 CombatTypes.cs에 통합했다.
+
+### 전투 타입과 현재 사용자 추가 변경
+
+- `Assets/Scripts/Combat/CombatTypes.cs`, namespace `Parry.CombatClass`에 `PlayerAttackType { Normal, ParryCounter }`, `AttackHitContext`, `MonsterHitContext`가 있다. 이전 개별 AttackHitContext.cs와 MonsterHitContext.cs는 통합 후 삭제했다.
+- AttackHitContext는 몬스터 → 플레이어 타격 정보다. Damage, Attacker, MonsterAttackType, CanKnockback, KnockbackDistance, CausesFaint, AttackDirection을 보관한다. float 생성자와 PlayerCharacter.TakeDamage(float, Monster) 편의 오버로드는 사용자 지시로 제거했다. 실제 타격에는 공격자가 항상 있다.
+- MonsterHitContext는 플레이어 → 몬스터의 최종 피해 정보다. **사용자가 최근 AttackType을 추가했다. 현재 생성자는 `(float damage, PlayerAttackType attackType, bool isCritical = false)`다.** Damage와 IsCritical도 보관한다.
+- PlayerStatComponent.CreateMonsterHit의 **현재 인자는 `(float baseDamage, PlayerAttackType attackType)`**다. PlayerAttack.ApplyAttackHit은 Normal, 패링 반격은 ParryCounter를 전달한다. 이 최신 사용자 변경 이후 전체 Play 검증을 다시 실행하지 않았다.
+
+### 넉백과 기절 용어·공격 데이터
+
+- 사용자 정의로 기존 stagger(움찔)는 **knockback(넉백)**, 기존 knockdown(쓰러짐)은 **faint(기절)**로 재명명했다.
+- MonsterAttackData의 `CanKnockback`은 넉백 모션·밀림·행동 잠금을 적용할지 결정한다. 꺼지면 밀림도 없다. KnockbackDistance는 별도 거리다.
+- Normal은 기절할 수 없고 Heavy는 무조건 기절한다. `CausesFaint => attackType == MonsterAttackType.Heavy`로 계산하며 기절 bool을 Inspector에서 선택하지 않는다. 두 종류 모두 CanKnockback은 선택 가능하다.
+- `Assets/Editor/MonsterAttackDataEditor.cs`는 CanKnockback을 켰을 때만 거리를 표시하고, Heavy 선택 시 항상 기절한다는 안내를 표시한다. 이전 직렬화 이름은 FormerlySerializedAs로 읽는다.
+- PlayerHitReaction의 이름은 `IsFainted`, `faintClip`, `faintHoldDuration`, `bIsInvulnerableWhileFainted`, `hitInvulnerabilityEndTime`이다.
+- StartReaction에서 CancelReaction 호출은 주석 상태다. 넉백 또는 기절이 있으면 ReactionRoutine을 시작한다. 넉백만 있을 때도 코루틴이 종료되어 행동 잠금이 풀리도록 수정했다. 기절 클립과 유지 시간은 WaitForSeconds(faintClip.length + faintHoldDuration)으로 합쳐졌다.
+- 공격자와의 X 차이가 0.01보다 크면 멀어지는 방향으로 밀고, 거의 겹치면 전달받은 AttackDirection을 사용한다. 공격자 null·방향 0 보정은 제거했다.
+- PlayerMovement.FixedUpdate의 구르기는 FacingDirection * rollSpeed, 공격 중 수평 속도는 0이다. 피격 반응 분기에서 넉백 속도를 적용한다.
+
+### 구르기와 패링
+
+- Animator의 구르기 상태·전환·IsRolling 파라미터, PlayerRollState.cs/.meta를 제거했다. PlayerAnimation도 구르기 파라미터를 전달하지 않는다.
+- PlayerCharacter.Roll이 공용 AnimationClipPlayer로 rollClip을 한 번 재생한다. 이동은 기존 rollSpeed를 사용한다. 별도 애니메이션 속도 변수는 추가하지 않았다.
+- **구르기 종료를 Update에서 감시하지 않는다.** Player_Roll.anim의 끝 0.3초에 `EndRoll` 이벤트가 있다. public EndRoll이 상태·쿨타임·무적을 정리하고 자신의 구르기 클립을 Stop한다. 피격·비활성화 때도 EndRoll을 호출한다.
+- 구르기 시작 시 rollInvulnerabilityEndTime을 계산한다. IsRollInvulnerable은 IsRolling과 현재 시간을 확인한다. 무적 시간이 끝나면 구르기 중에도 피해를 받는다. 코드 초기값 0.1초, **현재 Player.prefab 값은 사용자 편집으로 0.2초**다. 실제 에셋을 확인한다.
+- 패링 성공 시 유효 창을 유지하고 성공 쿨타임을 갱신하는 기존 합의는 유지된다. 성공할 때마다 `Stats.CreateMonsterHit(Stats.ParryCounterDamage, PlayerAttackType.ParryCounter)`를 계산해 context.Attacker.TakeDamage에 전달한다.
+- PlayerStatComponent의 디버그 ContextMenu는 Stats 체력만 직접 차감한다. PlayerCharacter의 방어·피격 피드백을 통과하지 않는다.
+
+### 몬스터 스탯과 클립
+
+- MonsterData에 `[Serializable] MonsterBaseStats { maxHp, moveSpeed }`를 추가했다. MonsterBrain.Awake에서 연결된 데이터의 BaseStats를 읽어 Monster.Initialize와 MonsterMovement.Initialize에 전달한다.
+- Monster의 hp는 런타임 개체별 private 필드이며 Hp로 조회한다. 공유 ScriptableObject 체력을 깎지 않는다. Goblin.asset 현재 maxHp는 사용자의 기존 시험값 **8,000,000**, moveSpeed는 2다.
+- Monster.TakeDamage는 MonsterHitContext를 받는다. 체력 감소와 숫자 생성 후 체력이 0이면 비활성화한다. 생존 중 기존 공격·AI·속도를 중단하지 않는다. 빨간 플래시 코루틴은 StartCoroutine(HitFlash())로 직접 호출한다.
+- **사용자가 최근 Monster에 serialized Transform `damageSpawnPos`를 추가했다.** 숫자 위치는 이 Transform.position을 사용하며 null 보정은 없다. Goblin.prefab에 연결되어 있다. 임시 몬스터를 만드는 검증 스크립트도 이를 고려해야 한다.
+- 고블린이 맞으면 공격이 끊기는 것처럼 보인다는 문의가 있었다. 공격 중간에 직접 피해를 주어 동일 클립 시간이 계속 진행됨을 확인했다. 사용자는 공격 마지막 자세에서 대기로 급격히 돌아오는 스프라이트 때문으로 판단했다.
+- Attack1·Attack2 끝에 기존 자세를 재사용한 복귀 두 프레임을 넣었다가, **사용자 요청으로 Attack1만 원래 상태로 복원**했다. 현재 Attack1은 1초, Attack2는 복귀 두 프레임을 유지해 약 0.85714287초다. ApplyAttackHit 이벤트 시점은 변경하지 않았다. 늘어난 클립 길이 뒤에 기존 후딜레이가 시작한다.
+
+### 카메라 피드백과 싱글톤의 최종 구조
+
+- Cinemachine 패키지를 설치했다. 현재 manifest/PackageCache의 버전은 **6.6.0**이다. Main Camera의 CinemachineBrain, 별도 Player Cinemachine Camera와 CinemachineImpulseListener를 구성했다. 기존 화면 구도를 유지했다.
+- 직접 Update/LateUpdate에서 위치를 흔들던 CameraShake.cs는 삭제했다. Noise Basic Multi Channel Perlin도 사용 가능하다고 설명했으나 사용자는 **Impulse Listener 방식**을 선택했다.
+- **최종 현재 경로는 `PlayerCharacter.TakeDamage → PlayerDamageFeedback.PlayHitFeedback → CameraFeedback.Instance.PlayShake → CinemachineImpulseSource → 활성 카메라 ImpulseListener`다.** PlayerController는 입력/캐릭터 참조 역할로 돌아갔고 카메라 Inspector 참조·중계 함수가 없다. Source는 플레이어에도 가상 카메라에도 없고 씬의 공용 CameraFeedback 오브젝트에 있다.
+- 사용자가 최종적으로 CameraFeedback도 Singleton<CameraFeedback>으로 변경했다. PlayerDamageFeedback은 캐시 없이 효과 호출 순간 Instance를 사용한다.
+- CameraFeedback.Awake는 protected override이며 base.Awake 호출 후 Source를 가져온다. PlayShake는 `GenerateImpulseWithForce(impulseIntensityWithPlayerHit)`를 사용한다. 사용자는 Test Invoke에서 5가 적절하다고 했지만 **현재 코드 기본값과 씬 저장값은 1**이다. 사용자 값을 임의로 5로 덮어쓰지 않는다.
+- `Assets/Scripts/Singleton.cs`는 lazy Instance 검색, 없으면 GameObject/AddComponent 자동 생성, DontDestroyOnLoad 구조다. Awake 중복 검사는 instance != null && instance != this이며 OnDestroy에서 자신의 static 참조를 해제한다. FindAnyObjectByType를 사용한다.
+- lazy 자동 생성으로 만들어진 매니저는 Inspector 설정이 없는 기본값을 사용한다. 자식 Awake에서는 부모 초기화를 명시적으로 호출해야 한다고 설명했다. UIManager와 DamageNumberSpawner도 이 싱글톤을 상속한다.
+
+### UI와 Screen Damage 제거
+
+- 최상단 UIManager GameObject에 Canvas(Screen Space Overlay), CanvasScaler(Scale With Screen Size, 1920×1080, Match 0.5), GraphicRaycaster와 UIManager 스크립트를 두었다. 하위 UI는 패널/RectTransform이며 Stretch를 사용한다. 별도 Canvas였던 효과 인스턴스는 씬에서 unpack했다.
+- Screen Damage를 잠깐 연결했다가 사용자 요청으로 **PlayerScreenDamage 전용 프리팹·스폰/재생 연결·검증 스크립트를 제거**했다. imported `Assets/AssetStoreImport/Screen Damage/` 원본은 남아 있지만 게임 피드백에 연결하지 않는다. 사운드는 사용자 지시로 작업하지 않는다.
+- PlayerDamageFeedback이라는 이름은 현재 카메라 피격 피드백용으로 다시 사용 중이다. 옛 Screen Damage 생성 코드와 혼동하지 않는다. UIManager 클래스는 현재 빈 싱글톤이며 카메라 흔들림을 담당하지 않는다.
+
+### Damage Numbers Pro와 치명타·난수
+
+- 에셋 위치는 `Assets/AssetStoreImport/DamageNumbersPro/`다. 숫자 스폰은 Asset API `DamageNumber.Spawn(position, damage)`를 사용한다. 에셋 자체 enablePooling, PrewarmPool, 수명 종료 반환/재사용을 확인했다.
+- PlayerStatComponent에 parryCounterDamage(기본 10), criticalChance(기본 10%), damageVariancePercent(기본 ±10%)가 있다. **기본 피해 × 난수 → 치명타 시 1.5배 → 정수 반올림** 순서이며 양수 기본 피해는 최소 1이다. 일반 공격과 패링 반격 모두 같은 CreateMonsterHit 함수를 사용한다. 각 대상의 적중 때 계산한다.
+- ±10%는 게임별 난수 방식 조사 후 이 프로젝트의 시작값으로 선택했다. 조절 가능한 스탯이며 사용자가 확정한 고정 규칙은 치명타 1.5배다. 조사 참고는 https://wiki.guildwars2.com/wiki/Damage_calculation 이다.
+- DamageNumberSpawner 싱글톤이 context.AttackType과 IsCritical로 프리팹을 선택한다. **사용자가 일반·치명타 외에 패링·패링 치명타 분기를 직접 추가해 현재 네 프리팹을 선택한다.** 씬의 네 필드는 모두 연결되어 있다.
+- 프리팹은 `Assets/Prefabs/UI/DamageNumbers/{NormalDamage,CriticalDamage,ParryDamage,ParryCriticalDamage}.prefab`이다. normal은 노랑, critical은 빨강이다. 에셋의 2D Pixel Text / Pixel-Shadow 폰트를 기반으로 생성했다.
+- 일반·치명타의 생성 시 설정은 lifetime 0.65초, unscaledTime true, 좌우 속도 -0.9~0.9 / 상향 1.4~2 / 중력 4, 회전·추가 흔들림·합치기 비활성이다. poolSize 24, maxActiveInstances 20이다. 실제 프리팹은 사용자 편집이 있으므로 다시 확인한다.
+- 현재 Spawner.Start는 **일반·치명타 두 프리팹만 PrewarmPool**한다. 사용자 추가 패링 프리팹은 아직 사전 풀 생성 호출을 추가하지 않았다. 패링 프리팹 자체의 풀링 설정도 다음 작업 시 확인한다.
+- 사용자가 ParryDamage 색을 바꾸지 못한다고 했을 때, DNP Number Settings.customColor가 TMP 색상을 노랑으로 덮어쓰고 있었다. **ParryDamage는 #2EB1FF로 설정**했고 노란 rich-text 태그·TMP 그라데이션을 정리했다. 패링 치명타 색은 사용자 에셋을 확인한다.
+- TMP Essential Resources가 없어 TMP 초기화가 중단되어 숫자 메시가 비던 문제를 발견했다. `TMP_PackageResourceImporter.ImportResources(true, false, false)`로 `Assets/TextMesh Pro/` 기본 리소스를 추가한 뒤 실제 메시 생성과 Game 화면을 확인했다. `Temp/DamageNumbersPreview.png`는 임시 확인 캡처다.
+- TMP_BaseEditorPanel.OnEnable의 SerializedObjectNotCreatableException 문의 때 target=null인 TMP_EditorPanel 인스턴스 하나를 확인해 제거하고 Inspector tracker를 갱신했다. 그 뒤 재발 인스턴스가 없고 현재 Console 오류 0을 확인했다. null이 생긴 최초 계기는 확정하지 않았다. 패키지 코드를 수정하지 않았다.
+
+### 미리보기 도구
+
+- 공격 미리보기 메뉴는 **Tools > Parry > Attack Preview 하나**다. 기존 MonsterAttackPreviewWindow 클래스가 몬스터와 플레이어를 함께 지원한다. OpenPlayer와 두 개의 메뉴는 제거했다.
+- 몬스터의 공격 목록은 MonsterBrain.Data.Attacks, 플레이어는 PlayerAttack의 serialized attacks 목록에서 읽는다. Animator Controller의 모든 클립을 자동 검색하는 구조가 아니다.
+- 별도 **Tools > Parry > Animation Preview** 창은 AnimationPreviewWindow.cs다. 오브젝트와 클립을 직접 지정하고 재생/일시정지/프레임 이동한다. 2D SpriteRenderer 계층을 임시 복제하여 Scene에 표시한다.
+- 원본과 4유닛 떨어진 복제본에 Animator를 함께 구성해 클립을 샘플링한다. 처음 구현에서 Animator가 없어 시간이 흐르지만 스프라이트가 안 바뀌던 문제를 재현해 수정했다. 샘플링·원본 보존·창 종료 정리를 검증했다. 실제 게임 오브젝트를 재생하는 기능으로 혼동하지 않는다.
+
+### 검증 범위와 다음 세션의 주의점
+
+- VerifyClipRoll은 단발 클립·이동속도·EndRoll 이벤트 종료·쿨타임 재사용·비활성 정리를 통과했다.
+- VerifyMonsterBaseStats는 Awake 체력/속도 초기화·개체별 체력·공유 데이터 보존을 통과했다.
+- VerifyParryCounterDamage는 당시 고정 반격 피해·공격자 선택·몬스터 공격/상태/속도 유지·치명타 사망을 통과했다. 이후 난수·치명타·damageSpawnPos 등 변경이 있어 현재 그대로 재실행 가능한 상태라고 보장하지 않는다.
+- VerifyHitCameraShake는 실제 피격 후 카메라 이동·무적 타격 차단·원위치 복구를 여러 구조 변경 후 검증했다. 이후 사용자가 최종 싱글톤 구조로 바꾸고 부모 Awake 호출을 수정했으며 컴파일 완료를 확인했다. 최신 상태 전체 Play 검증은 별개다.
+- VerifyDamageNumbers는 일반/치명타 계산·색상·실제 TMP 메시·±10% 난수·일반 공격 ApplyAttackHit와 중복 방지·패링 반격·움직임·풀 반환/재사용을 통과했고 Game 캡처로 노랑/빨강 픽셀 숫자를 확인했다. **이 검증은 최근 사용자 AttackType 인자 추가 이전이다. 현재 스크립트에 CreateMonsterHit(100f) 호출들이 남아 있어 인자를 맞춰야 한다.** 임시 몬스터 생성 스크립트는 damageSpawnPos 연결도 고려한다.
+- AgentScripts는 Assets 밖의 수동 검증 코드이며 일반 게임 빌드에 포함되지 않는다. 스탯·위치·AI를 일시적으로 바꾸므로 테스트 Play 세션에서만 실행한다. 오래된 검증은 API 변경 때문에 그대로 실행되지 않을 수 있다. 요청 범위 없이 일괄 재작성하지 않는다.
+- 이번 인계에서는 실제 최신 코드를 읽었고 새 Play 테스트를 실행하지 않았다. Unity 상태 확인 결과 6000.6.7f1, 포트 37800, ready, 컴파일 false, Play stopped, Run In Background false였다.
+- CLI는 프로젝트 소유권/샌드박스 문제로 필요한 Unity 명령을 권한 상승하여 실행했다. 모든 명령에 `--project-path D:/GitHub/Parry`를 지정한다. 로컬 CLI beta.14의 1.0.0 업데이트 알림이 있지만 self-update는 승인/실행하지 않았다.
+- 현재 명령 목록을 확인하고 `unity command script recompile` 후 recompile_status completed/up_to_date를 확인한다. triggered가 지속되면 AssetDatabase.Refresh(ForceUpdate) 후 연결·상태를 재확인하는 방식이 통했다. 연결이 끊기는 도메인 리로드와 실제 실패를 구분한다.
+- 후속 후보로 몬스터 타격 파티클·히트스톱·공격 적중 카메라 Impulse를 논의했다. **아직 구현하지 않았다.** 플레이어 피격·몬스터 숫자 표시 이후 다음 요청에 따라 진행한다. 소리는 아직 작업하지 않기로 했다.
 
 ## 현재 구현과 대화 — 2026-11-12 우선 읽기
 
@@ -550,3 +727,4 @@ assistant가 우클릭 유지→놓기, 최대 차징 자동 발동, 1타 타격
 ## 새 세션에 붙여넣을 짧은 메시지
 
 > SESSION-HANDOFF.md 맨 위 **현재 구현과 대화 — 2026-11-11**을 읽고 이어가자. 몬스터 작업 전 원래 GAME-DESIGN.md의 5절·6.3절·6.4절도 읽어줘. 현재 몬스터는 ScriptableObject 설정 복사 + 주입식 코드 FSM의 Chase/Wander이고, 스폰 귀환·IdleState·DeadState·전방 감지 옵션은 제거했어. 센서는 독립 갱신, 전투 종료는 거리 초과 또는 시야 상실 시간 만료 후 현재 위치 배회야. 복잡한 조건은 판단 함수/bool로 분리하고 한글 상황 주석을 달아줘. 현재 코드와 사용자 변경을 먼저 확인하고 내가 다음 요청할 때까지 기다려줘.
+

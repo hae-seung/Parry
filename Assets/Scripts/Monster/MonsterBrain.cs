@@ -42,7 +42,10 @@ namespace Parry.MonsterClass
                 return;
             }
             
-            movement.Initialize(data.MoveSpeed, data.Detection.obstacleLayers);
+            // 공유 데이터의 기본 스탯을 각 몬스터의 런타임 상태에 적용한다.
+            MonsterBaseStats stats = data.BaseStats;
+            monster.Initialize(stats);
+            movement.Initialize(stats.moveSpeed, data.Detection.obstacleLayers);
             sensor.Initialize(data.Detection);
             attack.Initialize(data.Attacks);
             
@@ -59,7 +62,7 @@ namespace Parry.MonsterClass
 
         private void Update()
         {
-            if (monster.IsDead)
+            if (monster.IsDead || Time.timeScale == 0f)
                 return;
 
             stateMachine.Tick();

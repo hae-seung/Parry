@@ -35,5 +35,11 @@ namespace Parry.PlayerClass
             if (context.performed)
                 Character.Attack();
         }
+
+        public void OnSkill(InputAction.CallbackContext context)
+        {
+            if (context.performed)
+                Character.Skill();
+        }
     }
 }

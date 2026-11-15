@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9a2eea77796a7bc4fabe1c913a8c2dd9, type: 3}
   m_Name: Goblin
   m_EditorClassIdentifier: Assembly-CSharp::Parry.MonsterClass.MonsterData
-  moveSpeed: 2
+  baseStats:
+    maxHp: 8000000
+    moveSpeed: 2
   attacks:
   - {fileID: 11400000, guid: 69d6b850ff56ef14bbe9f5c07674afa6, type: 2}
   - {fileID: 11400000, guid: dea15a39989073a42bf177accac8a346, type: 2}

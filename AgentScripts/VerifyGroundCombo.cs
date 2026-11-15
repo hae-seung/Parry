@@ -26,9 +26,7 @@ public static class VerifyGroundCombo
         foreach (var device in input.devices)
             if (device is Mouse paired) mouse = paired;
         if (mouse == null) throw new InvalidOperationException("No mouse.");
-        var monsterData = new SerializedObject(monster);
-        monsterData.FindProperty("hp").floatValue = 500f;
-        monsterData.ApplyModifiedPropertiesWithoutUndo();
+        monster.Initialize(new MonsterBaseStats { maxHp = 500f });
         monsterBody.bodyType = RigidbodyType2D.Kinematic;
         monsterBody.linearVelocity = Vector2.zero;
         foreach (var collider in monster.GetComponentsInChildren<Collider2D>()) collider.isTrigger = true;
@@ -51,7 +49,7 @@ public static class VerifyGroundCombo
             await Until(() => attack.IsAttacking);
             await Until(() => !attack.IsAttacking);
             await Task.Delay(200);
-            Check(Hp(monsterData) == 480f, "Hold repeated attacks or duplicate damage.");
+            Check(monster.Hp == 480f, "Hold repeated attacks or duplicate damage.");
             Release(mouse);
             await Task.Delay(50);
 
@@ -68,21 +66,21 @@ public static class VerifyGroundCombo
             double thirdRecoveryStart = Time.timeAsDouble;
             await Until(() => !attack.IsAttacking);
             Check(Time.timeAsDouble - thirdRecoveryStart >= 0.34, "Third strike recovery was too short.");
-            Check(Hp(monsterData) == 405f, "Combo did not deal 20 + 20 + 35 once per strike.");
+            Check(monster.Hp == 405f, "Combo did not deal 20 + 20 + 35 once per strike.");
 
             await Tap(mouse);
             Check(attack.ComboStep == 1, "Combo did not reset to first strike.");
             await Tap(mouse);
             attack.CancelAttack();
             await Task.Delay(800);
-            Check(!attack.IsAttacking && !attack.HasQueuedAttack && Hp(monsterData) == 405f, "Cancel left a queued attack or late damage.");
+            Check(!attack.IsAttacking && !attack.HasQueuedAttack && monster.Hp == 405f, "Cancel left a queued attack or late damage.");
 
             // Only the next strike is buffered; two clicks must produce exactly two strikes.
             await Tap(mouse);
             await Tap(mouse);
             await Until(() => attack.ComboStep == 2);
             await Until(() => !attack.IsAttacking);
-            Check(Hp(monsterData) == 365f, "Two clicks did not stop after second strike.");
+            Check(monster.Hp == 365f, "Two clicks did not stop after second strike.");
 
             body.position = new Vector2(0f, 1f);
             body.linearVelocity = Vector2.zero;
@@ -99,7 +97,6 @@ public static class VerifyGroundCombo
         }
     }
 
-    private static float Hp(SerializedObject monster) { monster.Update(); return monster.FindProperty("hp").floatValue; }
     private static void Press(Mouse mouse) => InputSystem.QueueStateEvent(mouse, new MouseState().WithButton(MouseButton.Left));
     private static void Release(Mouse mouse) => InputSystem.QueueStateEvent(mouse, new MouseState());
     private static async Task Tap(Mouse mouse) { Press(mouse); await Task.Delay(30); Release(mouse); await Task.Delay(30); }

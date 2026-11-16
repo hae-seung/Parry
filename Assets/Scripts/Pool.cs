@@ -52,6 +52,9 @@ namespace Parry
 
         public void Release(GameObject instance)
         {
+            if (ObjectPoolManager.IsQuitting)
+                return;
+
             if (instance == null || objectList.Contains(instance))
                 return;
 
@@ -62,6 +65,7 @@ namespace Parry
             }
             
             instance.SetActive(false);
+            
             instance.transform.SetParent(storageParent);
             objectList.Add(instance);
         }

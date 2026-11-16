@@ -19,14 +19,20 @@ namespace Parry.UIClass
 
         public void Spawn(MonsterHitContext context, Vector3 position)
         {
+            Spawn(context.Damage, position, context.AttackType, context.IsCritical);
+        }
+
+        public void Spawn(float damage, Vector3 position,
+            PlayerAttackType attackType = PlayerAttackType.Normal, bool isCritical = false)
+        {
             DamageNumber prefab;
             
-            if (context.AttackType == PlayerAttackType.Normal)
-                prefab = context.IsCritical ? criticalDamagePrefab : normalDamagePrefab;
+            if (attackType == PlayerAttackType.Normal)
+                prefab = isCritical ? criticalDamagePrefab : normalDamagePrefab;
             else
-                prefab = context.IsCritical ? parryCriticalDamagePrefab : parryDamagePrefab;
+                prefab = isCritical ? parryCriticalDamagePrefab : parryDamagePrefab;
             
-            prefab.Spawn(position, context.Damage);
+            prefab.Spawn(position, damage);
         }
     }
 }

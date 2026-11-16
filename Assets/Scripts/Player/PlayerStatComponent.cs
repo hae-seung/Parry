@@ -8,6 +8,7 @@ namespace Parry.PlayerClass
     public sealed class PlayerStatComponent : MonoBehaviour
     {
         [SerializeField, Min(1f)] private float maxHp = 100f;
+        [SerializeField, Min(1f)] private float maxStamina = 100f;
         [Tooltip("패링 성공 시 공격한 몬스터에게 주는 반격 피해량입니다.")]
         [SerializeField, Min(0f)] private float parryCounterDamage = 10f;
         [Tooltip("공격과 패링 반격의 치명타 확률(%)입니다.")]
@@ -18,13 +19,25 @@ namespace Parry.PlayerClass
 
         public float Hp { get; private set; }
         public float MaxHp => maxHp;
+        public float Stamina { get; private set; }
+        public float MaxStamina => maxStamina;
         public float ParryCounterDamage => parryCounterDamage;
         public bool IsDead => Hp <= 0f;
 
         private void Awake()
         {
             Hp = maxHp;
+            Stamina = maxStamina;
             gauge = GetComponent<PlayerParryGauge>();
+        }
+
+        public bool TryConsumeStamina(float amount)
+        {
+            if (Stamina < amount)
+                return false;
+
+            Stamina -= amount;
+            return true;
         }
 
         public MonsterHitContext CreateMonsterHit(float baseDamage, PlayerAttackType attackType)

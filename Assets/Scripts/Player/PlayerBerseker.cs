@@ -15,8 +15,10 @@ namespace Parry.PlayerClass
         [SerializeField, Min(1)] private int duration = 10;
         [Tooltip("버서커 종료 후 다음 진입까지의 대기시간(초)입니다.")]
         [SerializeField, Min(0f)] private float cooldown = 3f;
-        [SerializeField] private GameObject auraPrefab;
+        [SerializeField] private GameObject auraVfx;
         [SerializeField] private Vector3 auraOffset;
+        [SerializeField] private GameObject burserkerHitVfx;
+        [SerializeField] private GameObject burserkerExecutionVfx;
         [SerializeField] private AnimationClip roarClip;
         [SerializeField] private bool roaring;
 
@@ -30,12 +32,13 @@ namespace Parry.PlayerClass
         private float nextBerserkerTime;
         private WaitForSeconds waitBersekerTime = new WaitForSeconds(1.0f);
 
-        public event Action OnBurstStoredSlashes;
+        public event Action<GameObject> OnBurstStoredSlashes;
         public event Action OnDiscardStoredSlashes;
 
         public bool IsBerserking { get; private set; }
         public int RemainingSeconds { get; private set; }
         public bool IsRoaring => roaring;
+        public GameObject ExecutionEffectPrefab => burserkerExecutionVfx;
 
         private void Awake()
         {
@@ -79,7 +82,7 @@ namespace Parry.PlayerClass
                 RemainingSeconds = duration;
                 
                 auraInstance = ObjectPoolManager.Instance.SpawnObject(
-                    auraPrefab, 
+                    auraVfx, 
                     transform.position + auraOffset, 
                     transform);
             }
@@ -146,12 +149,10 @@ namespace Parry.PlayerClass
             IsBerserking = false;
             nextBerserkerTime = Time.time + cooldown;
             
-            if (roaring)
-                StopRoar();
-            
             RemainingSeconds = 0;
 
-            ObjectPoolManager.Instance.Release(auraInstance);
+            if (auraInstance != null)
+                auraInstance.GetComponent<PooledObject>().Release();
             auraInstance = null;
 
             if (countdownCoroutine != null)
@@ -169,7 +170,7 @@ namespace Parry.PlayerClass
 
         private void BurstStoredSlashes()
         {
-            OnBurstStoredSlashes?.Invoke();
+            OnBurstStoredSlashes?.Invoke(burserkerHitVfx);
         }
 
         private void DiscardStoredSlashes()

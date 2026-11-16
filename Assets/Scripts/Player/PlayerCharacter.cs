@@ -12,6 +12,7 @@ namespace Parry.PlayerClass
     public sealed class PlayerCharacter : MonoBehaviour
     {
         [SerializeField, Min(0f)] private float rollCooldown = 0.3f;
+        [SerializeField, Min(0f)] private float rollStaminaCost = 20f;
         [Tooltip("공격 적중 후 남은 공격 애니메이션의 재생 배율입니다. 1은 정상 속도입니다.")]
         [SerializeField, Range(0.01f, 1f)] private float attackHitPlaybackSpeed = 0.7f;
         [SerializeField] private AnimationClip rollClip;
@@ -155,6 +156,9 @@ namespace Parry.PlayerClass
             bool cooldownReady = Time.time >= lastRollTime + rollCooldown;
             bool animationReady = clipPlayer.CanPlay && rollClip != null;
             if (!cooldownReady || !animationReady)
+                return;
+
+            if (!Stats.TryConsumeStamina(rollStaminaCost))
                 return;
 
             //공격을 캔슬하고 구르기 가능

@@ -59,6 +59,15 @@ namespace Parry.MonsterClass
     
     
     
+    [Serializable]
+    public struct MonsterFlinchData
+    {
+        public AnimationClip clip;
+        [Min(0f)] public float duration;
+        [Tooltip("패링 성공 한 번마다 1씩 감소하며, 0이 되면 기절합니다.")]
+        [Min(1)] public int resistance;
+    }
+
     [CreateAssetMenu(fileName = "MonsterData", menuName = "Parry/Monster Data")]
     public sealed class MonsterData : ScriptableObject
     {
@@ -69,6 +78,7 @@ namespace Parry.MonsterClass
         };
         [Tooltip("사용할 공격 데이터 목록입니다. 거리 조건과 쿨타임을 만족하는 공격 중 하나를 무작위로 선택합니다.")]
         [SerializeField] private List<MonsterAttackData> attacks = new List<MonsterAttackData>();
+        [SerializeField] private MonsterFlinchData flinch = new MonsterFlinchData { duration = 1f, resistance = 3 };
         [Tooltip("플레이어 감지 거리·높이와 장애물 검사 설정입니다.")]
         [SerializeField] private MonsterDetectionSettings detection = new MonsterDetectionSettings
         {
@@ -89,6 +99,7 @@ namespace Parry.MonsterClass
 
         public MonsterBaseStats BaseStats => baseStats;
         public List<MonsterAttackData> Attacks => attacks;
+        public MonsterFlinchData Flinch => flinch;
         public MonsterDetectionSettings Detection => detection;
         public MonsterChaseSettings Chase => chase;
         public MonsterCombatSettings Combat => combat;

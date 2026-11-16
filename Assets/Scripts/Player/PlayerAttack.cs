@@ -140,7 +140,7 @@ namespace Parry.PlayerClass
             {
                 Monster target = hit.GetComponent<Monster>();
                 
-                if (target == null || !target.isActiveAndEnabled || target.IsDead || !hitTargetSet.Add(target))
+                if (target == null || !target.isActiveAndEnabled || target.IsDead || target.IsExecuting || !hitTargetSet.Add(target))
                     continue;
                 
                 MonsterHitContext hitContext = character.Stats.CreateMonsterHit(damage, PlayerAttackType.Normal);

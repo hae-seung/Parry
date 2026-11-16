@@ -56,6 +56,9 @@ namespace Parry.MonsterClass
 
         public bool TryStartAttack(float distanceSquared)
         {
+            if (monster.IsExecuting || monster.IsDead || monster.IsFlinching)
+                return false;
+
             // 거리 조건을 만족하고 쿨타임이 끝난 공격의 인덱스를 모은다.
             availableIndices.Clear();
             

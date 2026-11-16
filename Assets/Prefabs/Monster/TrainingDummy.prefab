@@ -15,6 +15,7 @@ GameObject:
   - component: {fileID: 1358797146391812003}
   - component: {fileID: 8764615377095666131}
   - component: {fileID: 7598181774459173395}
+  - component: {fileID: 7468976015489876457}
   m_Layer: 8
   m_Name: TrainingDummy
   m_TagString: Monster
@@ -30,12 +31,11 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2142758307636034552}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2, y: 2, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 2366674299197212502}
+  m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!212 &3717236968692374693
@@ -89,7 +89,7 @@ SpriteRenderer:
   m_MaskInteraction: 0
   m_Sprite: {fileID: 4723107735738678597, guid: c1cdd26cc09ad224884556bc4d8296ae, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_FlipX: 0
+  m_FlipX: 1
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 0.06, y: 0.08}
@@ -207,7 +207,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Parry.Monster.Monster
   hitFlashDuration: 0.12
   hitColor: {r: 1, g: 0, b: 0, a: 1}
-  damageSpawnPos: {fileID: 2366674299197212502}
+  burstHitInterval: 0.1
+  executionClip: {fileID: 7400000, guid: f9ed70674449937418e41915ee9842c6, type: 2}
+  deathClip: {fileID: 7400000, guid: 29965d916985882428b18882f448432f, type: 2}
+  totalDamage: 0
+  count: 0
 --- !u!114 &7598181774459173395
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -220,35 +224,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d117c6674c06a4b458c3b3d9474c8245, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry.MonsterClass.TrainingDummy
-  maxHp: 1000000
---- !u!1 &5579773368565138975
-GameObject:
+  maxHp: 500
+--- !u!114 &7468976015489876457
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2366674299197212502}
-  m_Layer: 0
-  m_Name: DamageSpawnPos
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2366674299197212502
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5579773368565138975}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.04, y: 0.26, z: 0}
-  m_LocalScale: {x: 0.5, y: 0.5, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2826530376171207509}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_GameObject: {fileID: 2142758307636034552}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b1b1cdb829944c3a73624ed2e48fa4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.AnimationClass.AnimationClipPlayer

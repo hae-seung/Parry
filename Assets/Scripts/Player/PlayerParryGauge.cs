@@ -23,7 +23,7 @@ namespace Parry.PlayerClass
 
         private void Awake()
         { 
-            currentGauge = 0f;
+            //currentGauge = 0f;
         }
 
         private void Update()

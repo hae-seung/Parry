@@ -645,7 +645,9 @@ MonoBehaviour:
   gaugeCost: 1
   duration: 10
   cooldown: 0
-  auraPrefab: {fileID: 8703667979743427324, guid: 8b5d2d38b0a49864dbd95f050b36873a, type: 3}
+  auraVfx: {fileID: 8703667979743427324, guid: 8b5d2d38b0a49864dbd95f050b36873a, type: 3}
   auraOffset: {x: 0, y: 0, z: 0}
+  burserkerHitVfx: {fileID: 8082543711907361596, guid: 08bd33ddc9cf7cf44a75656729522e18, type: 3}
+  burserkerExecutionVfx: {fileID: 4461413366454188522, guid: 654770b9a96b1544ea40c61969a9cb53, type: 3}
   roarClip: {fileID: 7400000, guid: fe068c135b0c5f645a6cc62d0b87c6d7, type: 2}
   roaring: 0

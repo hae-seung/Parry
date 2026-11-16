@@ -18,6 +18,10 @@ MonoBehaviour:
   attacks:
   - {fileID: 11400000, guid: 69d6b850ff56ef14bbe9f5c07674afa6, type: 2}
   - {fileID: 11400000, guid: dea15a39989073a42bf177accac8a346, type: 2}
+  flinch:
+    clip: {fileID: 7400000, guid: 1623be3451ee04f43b3faa4f124f2188, type: 2}
+    duration: 5
+    resistance: 1
   detection:
     obstacleLayers:
       serializedVersion: 2

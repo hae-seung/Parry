@@ -1,17 +1,97 @@
 # Parry 개발 세션 인계
 
-갱신: 2026-11-15 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+갱신: 2026-11-17 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+
+## 현재 구현과 대화 — 2026-11-17 우선 읽기
+
+이 절과 실제 최신 파일이 아래 과거 기록보다 우선한다. 이번 요청은 다음 세션 인계이며, 런타임 코드·에셋은 수정하지 않고 문서만 갱신했다.
+
+### 다음 세션 시작과 사용자 작업 방식
+
+- 관련 실제 파일과 Git 상태를 먼저 읽는다. 사용자가 코드·프리팹·씬·데이터·클립을 계속 직접 편집하며, main에 수정·미추적 파일이 많다. 사용자 변경을 보존한다. 이번 대화에서 커밋·푸시하지 않았다.
+- 코드 수정 요청과 설명·확인 요청을 구분한다. 정상 흐름에서 이미 보장된 타입·입력·데이터 범위를 재검사하거나 불필요한 계층을 추가하지 않는다. 호출 경로와 소유 관계를 확인하고 필요한 검사만 둔다.
+- **몬스터 기절 후 첫 공격에 폭발적인 추가 피해를 주는 설계는 철회됐다. 구현하지 않는다.** 버서커가 있으므로 별도의 기절 첫 타 보너스는 사용하지 않는다.
+- 현재 구현을 인계받고 다음 요청을 기다린다. 아래 미구현 항목은 사용자 요청 없이 자동 착수할 작업 목록이 아니다.
+
+### 버서커 공격 데이터와 피해 전달 — 구현됨
+
+- 클래스명은 `PlayerBerseker`다. 사용자 코드의 `burserkerHitVfx` 등 기존 철자를 임의로 고치지 않는다.
+- `PlayerAttackData`는 상속 가능한 클래스이고, `BerserkerAttackData : PlayerAttackData`에 최소 1인 `slashStackCount`가 있다. 일반·버서커 각각 3개 데이터가 `PlayerAttack`에 연결되어 있다. 현재 버서커 1·2·3타 중첩은 1·1·2다.
+- `StartAttack(index)`에서 재생을 시작할 때만 버서커 여부로 공격 데이터를 선택한다. 타수·콤보 예약을 공유한다. 모드가 도중에 끝나도 현재 클립은 끝내고, 다음 타수는 일반 공격으로 이어진다.
+- `Player_BerserkerAttack1/2/3.anim`은 당시 실제 일반 클립을 1.6배속으로 복사했다. 스프라이트 키·판정·예약·종료 이벤트를 1/1.6로 압축했다. 기존 적중 후 0.7배속 감속은 유지한다.
+- 버서커 데이터의 피해량은 일반 원본과 동일하게 만들었고 판정 크기는 가로·세로 20% 확대했다. 현재 사용자가 조절할 수 있는 에셋 값이 우선한다. Attack Preview는 일반·버서커 데이터를 모두 읽는다.
+- `PlayerAttack.berserkerStoredDamagePercent`는 추가 저장할 최종 피해 비율(현재 50%)이다. 직접 피해를 줄이는 비율이 아니다.
+- 사용자 `AddBerserkerInfo(ref MonsterHitContext context)`는 `IsBerserking=true`, `Berseker=berseker`, `berserkerAttacks[attackIndex].SlashStackCount`, 최종 피해×비율을 직접 대입한다. 호출부에서 적중 시점의 버서커 여부를 검사한다. 불필요한 타입 검사나 0 대체값을 복원하지 않는다.
+- `MonsterHitContext`는 수정 가능한 struct. 기존 Damage/AttackType/IsCritical 외에 IsBerserking/Berseker/StoredDamage/SlashStackCount를 가진다. **IsBerserking은 참조와 별개로 직관적인 표시용으로 계속 유지하기를 사용자가 원한다.**
+
+### 몬스터 중첩·이벤트·Burst — 구현됨
+
+- 별도 `MonsterBerserkerDamage` 컴포넌트는 사용자 요청으로 제거했다. `Monster`가 `totalDamage`, `count`, `storedBerseker`를 직접 관리한다.
+- 첫 저장 때만 해당 버서커의 `OnBurstStoredSlashes(Action<GameObject>)`, `OnDiscardStoredSlashes(Action)`를 구독한다. 이후 적중은 합산만 한다. 발동·소멸·초기화·비활성화 시 저장값과 구독을 정리한다.
+- 버서커는 발동/소멸 신호만 보낸다. 수동 종료 이벤트는 버서커에 등록된 Burst 이펙트 프리팹도 전달한다. 시간 종료는 저장값을 버린다.
+- 저장 count에는 상한이 없다. 발동 때 `burstCount = Mathf.Min(count, 10)`, `burstDamage = totalDamage / burstCount`로 계산한다. 분모에 원래 count를 사용하지 않는다. 총 피해를 유지하며 최대 10번 출력한다.
+- 현재 Burst 간격은 고블린·허수아비 모두 0.1초다. 사용자 `BurstDamageRoutine`은 매 타격 후(마지막 포함) 대기하고 처형 중이면 끝에 사망 상태로 간다. HP가 0이어도 숫자는 모두 출력하며 `ApplyDamage(float)`는 이미 죽었으면 체력 변경만 생략한다.
+- 숫자와 체력 감소를 분리했다. `TakeNormalDamage`는 context로 숫자 생성 후 `ApplyDamage(context.Damage)`, `TakeBurstDamage`는 float로 숫자 생성 후 `ApplyDamage(damage)`를 호출한다. Burst에서 숫자 표시용 context를 새로 만들지 않는다.
+- `GetDamageSpawnPosition()`은 `bodyCollider.bounds`의 X/Y 범위에서 무작위 Vector3(z는 bounds.center.z)를 반환한다. 일반·Burst 모두 사용한다. `damageSpawnPos` 필드와 두 몬스터 프리팹의 동명 자식은 제거했다.
+- `DamageNumberSpawner.Spawn(context, position)`은 숫자 타입 선택을 유지하며, float를 받는 오버로드로 위임한다. Burst는 float 오버로드를 직접 사용한다.
+
+### 처형·사망과 VFX — 구현됨
+
+- 피격에서 직접 피해 이후의 예상 체력 `remainingHp = Max(0, hp-context.Damage)`를 먼저 계산한다. 현재 처형 조건은 **`totalDamage + context.StoredDamage > remainingHp`**(엄격한 초과)다. 같을 때 실행되는 조건으로 임의 변경하지 않는다.
+- 처형 가능하면 먼저 `EnterExecutionState`와 처형 이펙트 생성, 이후 직접 피해·중첩 저장·Burst를 진행한다. 해당 대상만 처형하고 버서커와 다른 대상의 저장값은 유지한다.
+- `MonsterExecutionState`: 공격·이동 중단, `Goblin_Execution.anim` 재생. 이 클립은 Goblin `Take Hit_2` 한 장을 유지한다. `IsExecuting` 동안 외부 피격을 거절하고 HP 0이 되어도 Burst 숫자 출력을 끝낸다.
+- 출력 완료 후 `MonsterDeadState`로 전환한다. 사망 애니메이션 재생 시 Rigidbody2D.simulated=false. `Goblin_Death.anim`은 원본 Death 4프레임이며 마지막 `EndDeath` 이벤트가 Destroy한다. 일반 치명타도 사망 상태를 거친다.
+- 고블린은 Brain의 FSM, AI 없는 허수아비는 Monster의 애니메이션 경로로 처형·사망을 처리한다. 더미에 AI를 추가한 것이 아니다.
+- Burst 이펙트는 `Slash_X Small` 원본으로 만들었고 **현재 프리팹 이름은 사용자가 변경한 `Assets/Prefabs/Effects/BurserkerHit.prefab`**다. 애니메이션·컨트롤러 파일은 `Slash_X_Small` 이름이다. 실제 Player.prefab 참조를 사용한다.
+- 처형 이펙트는 `Hit_Heavy Small` 원본의 `Execution_Effect.prefab`이다. 둘 다 15fps 단발, 끝 `EndEffect` → `EffectLifetime.Release()`로 기존 풀에 반환한다.
+- 공통 스킬 이펙트 프리팹은 버서커가 소유한다. Monster는 수동 Burst 이벤트 인자로 Burst 프리팹을 받고, 처형 시 context.Berseker.ExecutionEffectPrefab으로 처형 프리팹을 얻는다.
+- **Burst·처형 이펙트는 부모 없이 몬스터의 현재 transform.position에 1회 생성한다.** 몬스터 사망 시 자식 이펙트를 분리하는 처리는 제거했다. 부모가 없어 사망 뒤에도 재생·풀 반환할 수 있다. 오러처럼 추종 효과만 부모를 쓴다.
+
+### 몬스터 Flinch — 구현됨 / 최신 소유 관계
+
+- 사용자가 몬스터의 기절을 `Flinch`로 명명했다. 플레이어의 `Faint`와 구분한다.
+- `MonsterData.cs`의 `[Serializable] struct MonsterFlinchData`에 `clip`, `duration`, `resistance`가 있고 MonsterData.Flinch로 읽는다. 저항 최소치는 1이다.
+- **현재 고블린 에셋은 HP 8,000,000 / 기절 시간 5초 / 기절 저항 1**이다. 최초 검증 당시 저항 3과 구분하며 사용자 값을 되돌리지 않는다.
+- `Monster.Initialize(stats, flinchData)`가 인스턴스별 데이터·현재 저항을 초기화한다. `Monster`가 CurrentFlinchResistance, 감소/초기화, Flinch 진입 판단을 소유한다. Brain에 현재 저항이나 감소/초기화/Flinch 판단 함수를 다시 넣지 않는다.
+- **최신 사용자 편집은 `Monster.TakeDamage` 앞부분에서 ParryCounter이고 brain이 있을 때 저항을 감소시킨 뒤 일반/버서커 피해 경로로 분기**한다. 이전에 TakeNormalDamage 이후 감소하던 순서보다 최신이다.
+- 일반 공격에는 저항 감소가 없다. 성공한 패링의 반격은 이미 PlayerCharacter에서 ParryCounter를 보내므로 별도의 패링 알림을 추가하지 않았다. 저항이 정확히 0이 되면 Flinch에 진입한다.
+- `MonsterBrain`: FSM과 AI 관리. `MonsterFlinchState`: 공격·이동 중단, clip 재생, 게임 시간으로 duration 유지. 만료 시 Monster.ResetFlinchResistance 후 기존 WanderState의 정지 대기로 복귀한다. 독립 IdleState는 없다.
+- FSM은 ChangeState가 Exit/Enter를 호출하고 매 프레임 현재 State.Tick을 실행한다. AI 조건 전이는 State.Tick에서, 처형·사망·기절 같은 전투 판단은 Monster에서 전이를 요청한다.
+- `Goblin_Flinch.anim`은 이제 사용자가 만든 `Goblin_Flinch.png`의 두 스프라이트를 반복한다. **현재 사용자 설정은 Samples=2, 1초 루프**다. 최초 제작 당시의 10fps로 되돌리지 않는다.
+- 새 스프라이트는 프레임 64×64, 기존은 150×150, PPU는 둘 다 64. 발 위치를 맞추려고 새 두 프레임 피벗을 custom (0.5, 0.65625) = (32,42)px로 맞췄다. 기존 Attack2_2의 발은 pivot보다 26px 아래, 새 발은 하단 16px이므로 pivotY=16+26=42다. 월드 발 높이는 모두 -0.40625다.
+- 피벗은 Sprite Editor 데이터 제공자와 기능 지원 검사 후 변경했다. 스프라이트 ID/클립 참조는 유지했다. 수동 meta 편집으로 피벗을 바꾸지 않는다.
+
+### 풀 종료 오류 — 최종 단순화 상태
+
+- 오류 원인은 Player.OnDisable → 오러 반환 → Pool.Release의 SetParent와 부모 비활성화 처리 충돌, 종료 중 ObjectPoolManager.Instance가 관리자를 재생성하는 문제였다.
+- **최종 선택은 게임 종료 중에는 반환을 하지 않는 것만**이다. `Pool.Release` 맨 위에서 ObjectPoolManager.IsQuitting이면 return한다.
+- IsQuitting은 static. SubsystemRegistration에서 false 초기화와 Application.quitting 이벤트 재등록, 이벤트에서 true 설정. 관리자 인스턴스가 먼저 없어져도 정적 상태와 소유 Pool 참조로 확인 가능하다.
+- 오러는 auraInstance의 PooledObject.Release를 직접 호출하며 싱글톤을 조회하지 않는다. Pool은 일반 C# 객체다.
+- 중간에 추가했던 부모 비활성 상태별 파괴/보관 처리와 파괴된 보관 객체 RemoveAll은 사용자 요청으로 제거했다. 현재 정상 반환은 비활성화 → SetParent(storageParent) → 목록 추가다. 플레이 중 부모 비활성화/파괴는 종료 검사와 별개이며 현재 일반 해법을 추가하지 않았다.
+
+### 사용자 에셋 값과 후속 범위
+
+- 현재 Player.prefab: 버서커 비용 1 / 지속 10 / 쿨타임 0, 저장 피해 비율 50%, 게이지 감소 0 / currentGauge 100. PlayerParryGauge.Awake의 0 초기화는 사용자 주석 상태라 시작 시 Inspector 값을 유지한다.
+- 게이지 배율은 일반 공격만 적용한다. 현재 버서커 중에도 패링 게이지를 얻는다. 버서커 중 패링의 시간 회복·게이지 획득 차단, 피격 시간 감소, HUD는 아직 미구현이다.
+- 버서커 중 패링 반격의 참격 1개 저장은 설계에 있으나 아직 PlayerCharacter의 반격 context에 버서커 정보를 추가하지 않았다. 현재 중첩 정보 추가는 PlayerAttack의 일반 공격 경로다.
+- 기절 첫 타 추가 피해는 철회됐다. 그 외 남은 설계는 BERSERKER-DESIGN.md와 실제 코드를 대조하고 다음 요청에 맞춰 진행한다.
+
+### 검증과 인계 시 주의
+
+- 생성/검증 도구는 Assets 밖 `AgentScripts`에 있다. VerifyExecutionStates, VerifyParryFlinchResistance, VerifyMonsterFlinch, VerifyPoolShutdown, FixGoblinFlinchPivot 등으로 각 구현 당시 검증했다. 프리팹 생성 도구는 기존 에셋 덮어쓰기용으로 실행하지 않는다.
+- 실제 패링 경로의 3→2→1→0, 개체별 저항, 지속시간/회복/반복 기절, 처형 10회 숫자 출력 후 사망/Destroy, 부모 없는 VFX 반환, 활성 오러가 있는 Play 종료를 검증한 이력이 있다.
+- **이후 사용자가 저항 1, 클립 Samples=2, TakeDamage 내 저항 감소 위치 등을 편집했다. 과거 검증을 현재 전체 파일의 보장으로 말하지 않는다.** VerifyParryFlinchResistance는 저항 3을 가정하고, VerifyMonsterFlinch 등은 옛 스프라이트/시간 가정을 포함할 수 있으므로 실행 전 현재 에셋에 맞춰 확인한다.
+- 이번 인계에서는 새로운 Play 검증·게임 코드 변경을 하지 않았다. 마지막 에이전트 Play 검증은 종료했다. 실제 다음 작업 때 Editor 상태를 다시 확인한다.
+- Unity CLI는 `--project-path D:/GitHub/Parry`를 지정한다. 현재 명령은 `unity command script run --file ... --entry ...`이며 예전 `run_script` 이름은 실패한다. 연결은 샌드박스 밖 실행이 필요했던 이력이 있다.
 
 ## 현재 구현과 대화 — 2026-11-15 우선 읽기
 
 이 절과 실제 최신 코드가 이전 기록보다 우선한다. 사용자는 다음 세션 인계를 요청했다. 코드·프리팹·씬은 이번 인계에서 수정하지 않았고, 다음 요청을 기다린다.
 
-### 사용자 작업 방식과 상태 관리 최종 합의
+### 사용자 작업 방식
 
 - 사용자가 코드·프리팹·씬·클립을 직접 계속 수정한다. 작업 전 관련 실제 파일과 Git 상태를 다시 읽고 보존한다. main에 수정·삭제·미추적 파일이 많다. 이번 세션에서 커밋·푸시하지 않았다.
-- 상태 관리는 현재의 각 기능별 if/Can 함수 구조를 유지하기로 최종 합의했다. partial 클래스, PlayerCharacter.Actions.cs, 공통 PlayerAction/PlayerActionState switch 허용표는 도입 후 철회해 현재 없다. 상태 머신은 설명만 했고 채택하지 않았다. 다시 구조를 전환하지 않는다.
 - PlayerCharacter.Attack/Parry/Skill은 각각 TryStartAttack/TryStartParry/ToggleBerserker 호출만 전달한다. 행동 조건은 담당 기능 내부에서 한 번 검사한다. 호출부에 포효/사망 검사를 중복 추가하지 않는다.
-- 긴 조건식은 의미별 지역 bool(isActionLocked/isBusy/cooldownReady/animationReady 등)과 짧은 if로 나눈다. 사용자가 PlayerBerseker 진입 조건을 CanEnterBerserker()로 분리하고 일부 조건을 직접 if로 편집했다. 최신 순서와 문체를 존중한다.
 - 정상 흐름에서 불가능한 상황을 가정한 방어 코드와 중복 검사를 줄이는 것을 선호한다. 피격 분기의 berseker.EndRoar()는 제거했다. 필수 참조의 null 대체 조건·재생 전 검사 직후 Play 반환값 재검사·IsHitReacting에 포함되는 IsFainted 진입 중복 검사·미사용 damageFeedback 캐시도 제거했다.
 - 실제 필요한 상태 검사·공격 이벤트 중복 방지·풀 중복 반환 방지·비활성화 정리는 유지한다. 특히 포효 중 R 재입력 차단은 필요하다. 버서커는 이미 켜져 있어 그 R은 재진입이 아니라 즉시 종료로 해석되며, 종료 후 쿨타임이 이를 대신 막아주지는 못한다.
 - 질문과 구현 요청을 구분한다. 불필요한 인터페이스·상태 계층·인스턴스 역조회 Dictionary를 추가하지 않는다.
@@ -313,7 +393,7 @@
 ### 대화 끝과 사용자 코드 작성 선호
 
 - 마지막 요청은 세션 인계 정리다. 직전에는 IdleState를 제거하고 시작 상태를 Wander로 통일했으며, Wander.Tick의 상황별 한글 주석을 정리했다.
-- 사용자 명시: 함수와 if 분기를 읽기 쉽게 작성한다. 복잡한 계산·조건을 if 안에 몰아넣지 말고 의미 있는 판단 함수나 이름 있는 bool 변수로 분리한다. 함수·분기가 어떤 상황이며 무엇을 하는지 한글 주석으로 설명한다. 현재 MonsterWanderState.Tick을 예시로 삼는다.
+- 함수의 역할과 복잡한 판단을 읽기 쉽게 표현하고, 필요한 상황과 의도는 한글 주석으로 설명한다.
 - 컴포넌트 참조 필드는 맨 위, 관련 상태 변수는 한곳에 묶는다. 프로퍼티는 Awake 위, Awake/Start/Update 등 생명주기 함수는 일반 함수보다 위를 선호한다. 기존 파일에서 사용자가 바꾼 순서는 읽고 보존하며 요청 범위에서 정리한다.
 - “사람들은 보통 어떻게 하냐”는 실무의 유지보수·확장 가능한 설계를 묻는 뜻이다. 단순 하드코딩 API 예제를 설계 답변으로 대체하지 않는다. 업계 다수가 쓴다고 근거 없이 단정하지 않는다.
 - 역할과 의존성을 먼저 설명한다. 사용자는 불필요한 옵션·복잡한 구조·검증하지 않은 방어 코드를 싫어한다. 요청하지 않은 기능을 미리 추가하지 않는다.

@@ -7,11 +7,7 @@ namespace Parry.PlayerClass
         typeof(SpriteRenderer))]
     public sealed class PlayerMovement : MonoBehaviour
     {
-        [SerializeField, Min(0f)] private float moveSpeed = 6f;
-        [SerializeField, Min(0f)] private float jumpSpeed = 12f;
-        [SerializeField, Min(0f)] private float groundCheckDistance = 0.06f;
-        [SerializeField] private LayerMask groundLayers = 1;
-        [SerializeField, Min(0f)] private float rollSpeed = 9f;
+        private PlayerMovementData data;
 
         private readonly RaycastHit2D[] groundHits = new RaycastHit2D[8];
         private Rigidbody2D body;
@@ -40,14 +36,15 @@ namespace Parry.PlayerClass
             }
         }
 
-        private void Awake()
+        public void Initialize(PlayerMovementData data)
         {
+            this.data = data;
             body = GetComponent<Rigidbody2D>();
             capsule = GetComponent<CapsuleCollider2D>();
             sr = GetComponent<SpriteRenderer>();
             character = GetComponent<PlayerCharacter>();
             attack = GetComponent<PlayerAttack>();
-            groundFilter.SetLayerMask(groundLayers);
+            groundFilter.SetLayerMask(data.groundLayers);
             groundFilter.useTriggers = false;
         }
 
@@ -79,7 +76,7 @@ namespace Parry.PlayerClass
 
             if (character.IsRolling)
             {
-                velocity.x = FacingDirection * rollSpeed;
+                velocity.x = FacingDirection * data.rollSpeed;
                 body.linearVelocity = velocity;
                 return;
             }
@@ -138,7 +135,7 @@ namespace Parry.PlayerClass
                 Vector2.down,         // 아래 방향으로
                 groundFilter,         // 지정한 레이어만, Trigger 제외
                 groundHits,           // 결과를 기존 배열에 저장
-                groundCheckDistance   // 0.06 유닛만큼 검사
+                data.groundCheckDistance   // 0.06 유닛만큼 검사
             );
             
             for (int i = 0; i < hitCount; i++)
@@ -154,10 +151,10 @@ namespace Parry.PlayerClass
 
         private void MovePlayer(ref Vector2 velocity)
         {
-            velocity.x = horizontalInput * moveSpeed + KnockbackVelocity;
+            velocity.x = horizontalInput * data.moveSpeed + KnockbackVelocity;
             if (jumpRequested && IsGrounded)
             {
-                velocity.y = jumpSpeed;
+                velocity.y = data.jumpSpeed;
                 IsGrounded = false;
             }
             jumpRequested = false;

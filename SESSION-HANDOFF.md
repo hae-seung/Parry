@@ -1,6 +1,150 @@
 # Parry 개발 세션 인계
 
-갱신: 2026-11-17 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+갱신: 2026-11-18 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+
+## 현재 구현과 대화 — 2026-11-18 보스 제작 전 최종 인계
+
+이 절과 실제 최신 파일이 아래 같은 날짜의 이전 기록보다 우선한다. 이번 요청은 세션 인계이며 **런타임 코드·씬·에셋을 수정하지 않고 이 문서만 갱신**한다.
+
+### 다음 세션에서 할 일
+
+1. 이 절을 읽고 실제 코드·Git 작업 트리부터 확인한다. 브랜치는 main이며 사용자 수정·미추적 에셋이 많다. 이번 세션에서 커밋·푸시하지 않았다. 사용자 편집을 보존한다.
+2. **사용자는 보스를 제외한 일반 몬스터와 플레이어 기능은 완료했다고 선언했다. 다음 작업은 보스다. 보스의 구상은 사용자가 생각해서 알려줄 예정이므로, 설명을 받을 때까지 보스 설계·코드·에셋을 임의로 만들지 않는다.**
+3. 포트폴리오용 베타 범위는 고블린 한 종류 + 추후 보스 한 종류, 짧은 1스테이지다. 보스 콘셉트·패턴·페이즈는 미정이다. 기존 `Assets/Art/Boss_Golem` 자료가 있다고 보스를 골렘으로 확정하지 않는다.
+4. 과거 문서의 미구현 항목은 자동 착수할 목록이 아니다. 예를 들어 버서커 패링 반격의 저장 참격 추가는 이번 세션에도 연결하지 않았지만, 사용자 완료 선언을 무시하고 먼저 구현하지 않는다. 기절 첫 타 추가 피해는 철회된 설계다.
+
+### 사용자 선호와 작업 방식
+
+- 설명 질문과 코드 수정 요청을 구분한다. 필수 참조에 불필요한 fallback·null 검사·추상 계층을 추가하지 않는다. 기존 `PlayerBerseker`, `burserkerHitVfx` 등의 철자를 임의로 바꾸지 않는다.
+- **첫 Init에서 Unbind를 호출하는 패턴을 새로 추가하지 않는다.** 구독 해제는 OnDestroy에서 한다. 단, 실제 최신 `PlayerStatUI.Init`에는 이전부터 Unbind 호출이 남아 있다. 이 인계에서 그것을 제거하지 않았고, 모든 기존 UI가 동일하다고 주장하지 않는다. ParryUI/SkillUI/MonsterStatUI.Init에는 선행 Unbind가 없다.
+- UI는 이벤트를 구독한 뒤 컴포넌트의 인자 없는 InitUI를 호출한다. InitUI는 현재 값 이벤트만 발행한다. 컴포넌트가 UI 메서드를 직접 구독하는 방식으로 되돌리지 않는다.
+- 월드 UI는 공통 프리팹을 쓰되 몬스터별 전체 위치·크기는 별도 부모로 조절할 수 있다. 내부 바의 개별 위치 차이는 몬스터 프리팹에 중첩 프리팹 Override로 저장한다. 공통 MonsterStatCanvas 원본에 Apply All하면 다른 몬스터에도 배치 변경이 전파될 수 있음을 설명했다.
+- 맵의 지형·타일은 **Tilemap**으로 만든다. 개별 SpriteRenderer 지형 배치를 사용자가 명확히 원하지 않았다.
+
+### PlayerData와 플레이어 초기화 — 구현됨 / 최신 사용자 변경 중요
+
+- `Assets/Scripts/Player/PlayerData.cs`: ScriptableObject PlayerData와 기능별 Serializable struct를 한 파일에 정의했다. 실제 설정 에셋은 `Assets/Data/Player/PlayerData.asset`이다. Player.prefab과 Stage01/SampleScene의 플레이어에 연결했다. 마이그레이션 당시 세 설정이 같아서 하나의 에셋을 공유한다.
+- 구조체: PlayerCharacterData(구르기·적중 감속), PlayerStatData(체력·기력·회복·피해), PlayerMovementData, PlayerAttackSetData(일반/버서커 공격 목록·저장 비율·판정 레이어·이펙트), PlayerParryData, PlayerParryGaugeData, PlayerBerserkerData, PlayerHitReactionData. 개별 타격용 기존 PlayerAttackData/BerserkerAttackData 에셋은 그대로 참조한다.
+- PlayerCharacter는 serialized PlayerData data / `Data => data`를 갖는다. **Awake에서 관련 컴포넌트를 모두 GetComponent한 뒤 각 컴포넌트.Initialize(data의 해당 구조체)를 호출한다.** 각 컴포넌트는 전달받은 구조체를 private data로 보관하며 참조 캐시·필터·초기 스탯을 설정한다. 관련 컴포넌트의 기존 Awake 초기화는 Initialize로 옮겼다. PlayerAnimation/MyController 등의 독립 Awake는 남아 있다.
+- 현재 체력·기력·게이지·쿨타임·행동 상태는 컴포넌트별 런타임 값이다. 공유 ScriptableObject에 현재값을 쓰지 않는다. PlayerParryGauge.currentGauge는 런타임 확인용 SerializeField로 남았으며 Initialize에서 data.initialGauge로 설정한다. 구조체의 List는 기존 에셋 목록을 참조하며 현재 코드에서는 목록 자체를 수정하지 않는다.
+- **최신 실제 UI 진입점은 사용자 수정으로 `PlayerCharacter.Start → UIManager.Instance.Init(this)`다.** UIManager에는 Start/플레이어 검색이 없다. 이전 답변과 아래 과거 기록의 UIManager.Start 설명보다 이 사실이 우선한다.
+- 전체 흐름: `PlayerCharacter.Awake → 구조체별 Initialize 완료 → PlayerCharacter.Start → UIManager.Init → PlayerStatUI/ParryUI/SkillUI.Init → 이벤트 구독 → 컴포넌트.InitUI`. 모든 씬 Awake가 Start보다 먼저 끝나는 초기 배치 경로를 사용한다. UIManager는 게임 씬의 필수 참조이며 자동 검색/생성/지연 스포너를 추가하지 않았다.
+- `Assets/Editor/MonsterAttackPreviewWindow.cs`도 PlayerCharacter.Data의 attack 아래 일반/버서커 목록을 읽도록 수정했다. 컴포넌트에서 삭제한 serialized attacks 필드를 다시 조회하면 안 된다.
+- 인계 시 PlayerData 실제 값: HP/기력100, 기력 회복간격1/회복량10, 반격피해10, 치명타10%/피해난수10%; 이동6/점프12/구르기속도8; 구르기 쿨타임0.12/비용20/무적0.2, 적중 재생배율0.7; 패링 유효0.3/시도쿨3/성공쿨0.2; 게이지 최대100/패링획득15/감소0/공격보너스0.5/시작20; 버서커 비용30/지속10/종료쿨180/피격손실1/패링회복1, 저장피해50%. 사용자 값이 우선이며 과거 테스트값으로 되돌리지 않는다.
+
+### 몬스터 체력·기절·처형 UI — 구현됨
+
+- 공통 프리팹 `Assets/Prefabs/UI/MonsterStatCanvas.prefab`. World Space Canvas이며 HealthSet 아래 HealthSlider/WhiteHealthSlider, FlinchSlider, ExecutionSet 아래 배경 해골/ExecutionImageSlider(Image)가 있다. 사용자가 만든 배치·크기·색을 보존한다.
+- `MonsterStatUI`는 serialized MonsterHealthUI / MonsterFlinchUI / MonsterExecutionUI를 관리하고 이벤트 연결을 담당한다. **UI Start에서 부모 몬스터를 검색하지 않는다. Monster.Start에서 GetComponentInChildren<MonsterStatUI>(true)로 찾고, 있으면 statUI.Init(this)를 호출한다.** UI 없는 몬스터도 허용한다.
+- Init은 Monster.OnHpChanged → healthUI.SetHealth, OnFlinchResistanceChanged → flinchUI.SetResistance, OnStoredDamageChanged → executionUI.SetValue를 구독한 뒤 monster.InitUI, healthUI.ResetWhiteHealth를 호출한다. OnDestroy에서 같은 핸들러를 해제한다.
+- MonsterHealthUI: 실제 체력바는 current/max로 즉시 갱신한다. 흰 바는 기본0.2초 대기 후 초당0.8 비율로 Mathf.MoveTowards(흰값,실제값,speed*deltaTime)로 따라온다. **현재 Update 기반**이다. 코루틴 대안은 설명만 했고 바꾸지 않았다.
+- SetHealth는 매 호출마다 `whiteHealthStartTime=Time.time+whiteHealthDelay`를 설정한다. 연속 피격 시 대기를 다시 시작하며, 감소 중 추가 피격도 다시 대기한다. 기존 `value < healthSlider.value` 조건은 사용자 요청으로 제거했다. 회복/초기화 때 흰 바가 실제 체력보다 낮으면 즉시 올리는 조건은 남아 있다.
+- 중간에 초기화 이벤트 OnHpInitialized를 별도로 분리했다가 사용자가 롤백을 요청해 제거했다. 분리안을 복원하지 않는다.
+- MonsterFlinchUI: 남은 저항 current/max를 Slider에 표시한다. 패링 반격 시 Monster가 저항을 감소시키고 이벤트를 발행하며, 기절이 끝나 ResetFlinchResistance에서 다시 채운다. **ApplyDamage에서 HP가0이 되면 저항도0과 이벤트를 발행하여 노란 바를 비운다.** 일반 사망/처형 피해 모두 해당한다.
+- **최신 사용자 MonsterFlinchUI는 0분모 보호 없이 `(float)current/max`를 계산한다.** 이전 에이전트가 넣었던 max>0 보호는 사용자가 제거했다. 저항 데이터 없이 초기화하는 TrainingDummy에 이 UI를 붙이면 0/0이 될 수 있다. 과거 더미 UI 검증은 현재 파일을 보장하지 않으며 요청 없이 방어 코드를 복원하지 않는다.
+- MonsterExecutionUI.SetValue는 **(float storedDamage, float remainingHp)** 두 인자를 받는다. storedDamage>0이면 ExecutionSet을 활성화하고, 누적 피해/남은 체력으로 fillImage.fillAmount를 설정한다. 누적0이면 비활성화+fill0, 남은HP0이고 누적>0이면 fill1. Slider 이동이 아니라 Image Filled/Vertical/Bottom으로 해골이 밑에서부터 드러난다.
+- Monster.OnStoredDamageChanged는 초기 UI 발행, 저장 피해 증가, 실제 HP 변경, ClearStoredDamage의 초기화에서 (totalDamage,hp)를 발행한다. 수동 Burst·자동 소멸·사망 정리에서도 UI가 숨겨진다. 기존 엄격한 처형 조건 `totalDamage+context.StoredDamage > 직접 피해 후 남은 HP`는 바꾸지 않았다.
+- 인계 시 Goblin.asset 사용자 값은 **HP500 / 기절 지속100초 / 저항1**이다. 이전의 HP800만/기절5초 기록으로 되돌리지 않는다.
+
+### 전투 Context는 ref로 전달 — 구현됨
+
+- MonsterHitContext/AttackHitContext는 struct 그대로다. PlayerAttack → Monster.TakeDamage, MonsterAttack → PlayerCharacter.TakeDamage, 패링 반격의 Monster.TakeDamage 호출을 ref로 통일했다.
+- Monster의 TakeBerserkerDamage/TakeNormalDamage, DamageNumberSpawner.Spawn(MonsterHitContext), PlayerHitReaction.StartReaction도 ref를 유지한다. 패링 반격은 CreateMonsterHit 반환값을 지역 counterContext에 담아 ref 전달한다.
+- 값만 받는 피해 숫자/Burst API나 Context를 생성해서 반환하는 CreateMonsterHit까지 불필요하게 out/ref로 바꾼 것은 아니다. 과거 AgentScripts에서 예전 TakeDamage 시그니처/필드를 직접 쓰면 최신 코드에 맞춰 확인해야 한다.
+
+### Stage01 맵·폰트·카메라 — 구현됨
+
+- `Assets/Scenes/Stage01.unity`는 SampleScene을 보존해 별도로 만든 짧은 프로토타입 맵이다. 기본 동선은 시작 → 고블린 첫 전투 → 낮은 단차/선택 발판 → 고블린 전투 → 빈 보스 구역이다. 제작 당시 x=-8~118, 시작x3, 고블린4개(x18/39/72/79), 보스예정x105로 구성했다. 이후 사용자 배치 수정이 우선한다.
+- `Stage01_OuterRuins` 아래 GroundGrid/Ground, BackgroundGrid/Background, DecorationGrid/Decoration의 **3 Tilemap**. 지형용 개별 SpriteRenderer는 최종 제거했다. Ground는 static Rigidbody2D + TilemapCollider2D(composite Merge) + CompositeCollider2D(Polygons). 배경/장식 타일은 비충돌. 기본 셀1, 장식 셀0.25. `Assets/Data/Stage01`에 타일 에셋이 있다.
+- 기존 Hero Knight EnvironmentTiles를 재사용한 간단한 폐허 지형이다. 보스·체크포인트·씬전환·전투 봉쇄 문은 구현하지 않았다. 보스 자리와 경계만 준비했다. 원본 SampleScene의 기존 사용자 수정은 보존했다.
+- 사용자가 제목을 `Parry Knight`, Subtitle을 `01 / 폐허가 된 성지`로 편집했다. `D:/GitHub/ddolking/Assets/Resources/LegacyFont/Font/Galmuri11.ttf`를 Parry의 `Assets/Fonts/Galmuri`로 복사하고 Subtitle에 Galmuri11 SDF를 적용했다. 현재 문자+ASCII용 static TMP 에셋과 추가 한글용 dynamic fallback(1024, multiatlas, ClearDynamicDataOnBuild)을 생성했다. 다른 UI 폰트를 전부 바꾼 것은 아니다.
+- Main Camera는 실제 렌더링과 CinemachineBrain 담당. Player Cinemachine Camera 하나에 CinemachineCamera/PositionComposer/Confiner2D/ImpulseListener/ImpulseSource/CameraFeedback이 붙는다. 별도의 바운딩용 가상카메라를 만든 것이 아니다.
+- Stage01 카메라: OrthographicSize4.5, TargetOffset(1.8,1.6,0), PositionComposer Damping **(0.7,0.8,0)**, Confiner Damping0.2 및 CameraBounds. 큰 Damping이 더 늦게 따라오는 설정이다. 이후 사용자 값이 우선한다.
+- CameraFeedback은 **Singleton 상속을 제거한 MonoBehaviour**이며 static Instance를 Awake=this / OnDestroy=null로 관리한다(UIManager와 같은 방식). 자동 생성/검색 getter와 DontDestroyOnLoad가 없다. 기존 독립 CameraFeedback(Singleton) 오브젝트를 제거하고 Cinemachine 카메라로 이동했으며, 원래 Impulse 설정/강도를 보존했다. Stage01/SampleScene 모두 적용했다.
+
+### Selectable.OnDisable 배열 오류 — 원인 확인 / 에디터 우회 적용됨
+
+- `UnityEngine.UI.Selectable.OnDisable:570 → Slider.OnDisable:448`의 IndexOutOfRangeException이 반복됐다. 처음 생성/삭제와 Play 검증만으로 재현 못했다고 마무리했으나, 이후 **프리팹 편집 스테이지 Slider와 일반 씬 Slider가 등록 인덱스를 중복 사용**하는 상태를 포착했다. 재컴파일의 OnDisable에서 예외가 났다.
+- Unity 공식 UUM-150797: https://issuetracker.unity.com/issues/24342/indexoutofrangeexception-is-thrown-when-exiting-prefab-mode-and-then-play-mode . 6000.6계열은 수정 미제공, 공식 수정은6000.7.0b7/7000.0.0a8이다. 현재 Editor를 임의로 업그레이드하지 않았다.
+- `Assets/Editor/SelectableRegistryWorkaround.cs`는 6000.6에서만 동작하는 InitializeOnLoad 에디터 전용 우회다. assembly reload 전/Play 상태 변경/hierarchy·project 변경 후 등록 목록을 검사하고, 불일치할 때만 reflection으로 s_Selectables/s_SelectableCount/m_CurrentIndex를 재구성한다. 패키지 원본 파일은 수정하지 않았고 플레이어 빌드에는 포함되지 않는다. 수정된 Editor 버전으로 옮기면 제거를 검토한다.
+- 강화한 `AgentScripts/VerifySliderLifecycle.cs`에서 수정 전 Unregistered active Selectable: SampleScene/FlinchSlider를 재현했고, 수정 후 프리팹 모드 포함9개 등록, 생성/제거10회, 재컴파일, Play 진입/종료를 통과했다. 콘솔의 도구 누적 로그와 실제 현재 오류 개수가 다를 수 있으므로 console status의 groundTruth.consoleErrors를 본다. 필요 시 UnityEditor.LogEntries로 실제 콘솔을 읽는다.
+- 갑작스러운 컴퓨터 종료로 Monster.cs/MonsterStatUI.cs가 전부 null byte가 된 적이 있다. 종료 전 읽은 코드와 Git 기준으로 복구했으며 관련 변경 텍스트40개를 검사하고 컴파일·UI 검증을 통과했다. 이 손상은 복구된 과거 이력이다.
+
+### 검증·현재 상태·도구 주의
+
+- 작업별 검증: 몬스터 HP 즉시/흰 바 지연·감소/리셋, 기절 저항3→2→1→0/리셋, 처형 UI 활성/비율/HP변경/초기화; ref 전투 경로 컴파일; 맵 실제 걷기/점프로 시작→보스구역 통과; CameraFeedback Instance/양쪽 Impulse 호출/종료해제; 한글 Subtitle 실제 렌더링을 확인했다.
+- PlayerData 리팩터링 당시 Play에서 구조체8개가 에셋과 일치, 초기HP/기력UI, 이동·구르기 비용·기력회복·피격UI·패링·공격·버서커 진입/포효종료/종료를 검증했다. **그 후 사용자가 UI 진입점을 PlayerCharacter.Start로 옮겼다. 이번 인계는 읽기 확인만 했으며 이 최신 변경에 대한 새 Play 검증을 실행하지 않았다.**
+- 인계 시 읽기 확인: Unity6000.6.7f1, port37800, Stage01, Edit(stopped), compiling=false, scene.isDirty=false, runInBackground=false. 실제 현재 콘솔 오류0/경고0. 이전 누적 로그 수가0은 아니므로 혼동하지 않는다.
+- Git main의 변경에는 Player/Goblin 프리팹·데이터, 두 씬, 전투/카메라/UI 스크립트, 기존 문서, TimeManager와 TMP fallback 등이 있다. 미추적 PlayerData/Stage01/타일/폰트/몬스터·플레이어 UI/에디터 우회/AgentScripts 등을 포함한다. 사용자 변경이므로 임의 정리·커밋·푸시하지 않는다.
+- AgentScripts는 Assets 밖의 수동 도구다. MigratePlayerData는 **구 컴포넌트 필드에서 옮긴 일회성 도구**이고 이미 데이터 에셋이 있으면 거절한다. BuildStage01은 초안 생성이고 최종 Tilemap 전환은 FinishStage01Tilemaps다. 새로 실행하면 현재 사용자 지형을 재구성할 수 있으므로 실행하지 않는다. ApplySubtitleKoreanFont/ConnectMonsterStatUI도 사용자 에셋을 다시 저장하므로 단순 확인 목적으로 재실행하지 않는다.
+- VerifyPlayerData는 Play에서 몬스터를 잠시 비활성화하고 실제 행동을 시험한다. VerifyStage01Traversal도 전투를 끄고 이동한다. 테스트 후 Play 종료로 원복하고 Run In Background override를 off로 복원한다. 옛 검증 스크립트의 데이터값·필드명·Context 시그니처 가정은 현재에 맞춰 읽고 실행한다.
+- Unity CLI는 --project-path D:/GitHub/Parry를 명시한다. 샌드박스에서 Editor 검색이 안 되면 읽기/연결 명령에 적절한 권한을 사용한다. 스크립트 실행은 `unity command script run --file ... --entry ...`다. 재컴파일/Play 직후 domain reload 동안 연결이 끊길 수 있어 status --until-ready로 완료를 확인한다. 일시적인 Hold on/Reloading Domain 창을 사용자 응답이 필요한 대화상자로 단정하지 않는다.
+- CLI현재1.0.0-beta.14, stable1.0.1 업데이트가 확인됐지만 사용자 승인 없이 업데이트하지 않았다.
+
+## 이전 기록 — 2026-11-18 플레이어 UI 단계
+
+이 절과 실제 최신 파일이 아래 과거 기록보다 우선한다. 이번 인계 요청에서는 코드·에셋을 변경하지 않고 문서만 갱신한다.
+
+### 다음 세션 시작과 다음 작업
+
+- 실제 파일과 Git 상태부터 확인한다. 현재 main에 사용자 수정·미추적 파일이 있다. 이번 대화에서 커밋·푸시하지 않았다. 사용자 편집을 보존한다.
+- **다음 작업은 몬스터 체력·기절(자세)·처형 게이지 UI다. 사용자가 먼저 UI를 배치하기로 했다.** 준비된 구성을 확인한 뒤 사용자 요청에 맞춰 연결한다. UI를 임의로 새로 만들거나 몬스터 전투 로직부터 변경하지 않는다.
+- 사용자는 일반 몬스터와 플레이어의 기본 전투 구조를 마쳤다고 보고 UI 단계로 넘어왔다. 아래 미구현 설계는 자동 착수할 작업 목록이 아니다.
+- 설명 질문과 수정 요청을 구분한다. 정상 경로에서 보장된 필수 참조에 불필요한 대체값·검사·계층을 추가하지 않는다. 이전 절의 기절 첫 타 추가 피해 철회와 기존 철자 보존 규칙도 유효하다.
+
+### UI 연결 — 최종 합의와 실제 구현
+
+- **UI에서 이벤트를 구독한 뒤 플레이어 컴포넌트의 인자 없는 `InitUI()`를 호출한다. 컴포넌트의 InitUI는 현재 값 이벤트만 발행한다.** 컴포넌트에서 UI 메서드를 구독하거나 UI 객체를 인자로 받던 중간 구조로 되돌리지 않는다.
+- 흐름: `UIManager.Start → 플레이어 검색 → UIManager.Init(character) → 각 UI.Init(character) → 구독 → 컴포넌트.InitUI()`.
+- `UIManager`는 `Singleton<UIManager>` 상속이 아닌 일반 MonoBehaviour다. Awake에서 `static Instance=this`, OnDestroy에서 `Instance=null`. 자동 검색/생성 getter와 DontDestroyOnLoad는 없다. private PlayerStatUI/ParryUI/SkillUI 참조를 관리한다.
+- 게임 씬마다 UIManager를 둔다. 로비 UI는 별도 `LobbyUI`로 만들 계획이다. 로비 UI 구현은 아직 하지 않았다. 씬 전환 시 게임 씬의 새 UIManager.Start가 실행된다. 향후 플레이어가 늦게 생성되면 생성 완료 측에서 UIManager.Init(character)를 호출하는 방식으로 연결할 수 있지만 현재 스포너는 추가하지 않았다.
+- `PlayerCharacter`는 Stats, ParryGauge, PlayerBerserker 참조를 Awake에서 채운다. **최신 `PlayerParryComponent => parry`는 기존 private parry를 반환한다.** 한때 자동 프로퍼티를 선언만 하고 할당하지 않아 SkillUI.Init에서 NullReferenceException이 났다. Awake/Start 순서 문제가 아니었으며 사용자가 표현식 프로퍼티로 수정했다.
+- UI는 Unbind용으로 플레이어 컴포넌트 참조를 보관하고 OnDestroy에서 해제한다. **현재 사용자 파일은 PlayerStatUI.Init만 처음에 Unbind를 호출하고, ParryUI.Init/SkillUI.Init에는 이 호출이 없다.** 과거 에이전트의 반복 Init 검증이 이 최신 사용자 파일의 중복 방지를 보장하는 것은 아니다. 요청 없이 초기화 구조를 다시 변경하지 않는다.
+- C# event Action은 중복 구독과 파괴된 MonoBehaviour의 관리 객체에 대한 콜백 호출이 가능하므로 구독 해제가 필요하다고 설명했다. UnityEvent와 동작을 혼동하지 않는다.
+
+### 플레이어 기력과 체력 UI — 구현됨
+
+- PlayerStatComponent가 maxStamina/Stamina/MaxStamina와 TryConsumeStamina를 관리한다. Awake에서 최대 기력으로 시작한다.
+- PlayerCharacter.Roll은 다른 시작 조건 통과 후 기력을 소비한다. 부족하면 공격 취소·구르기 시작 전에 반환한다. 소비량과 정확히 같은 기력이면 가능하다. 패링에는 기력 조건·소비가 없다.
+- 기력 소비 시 `nextStaminaRecoveryTime=Time.time+staminaRecoveryInterval`. 이후 interval마다 amount 회복, 최대 기력으로 제한한다. 다시 소비하면 대기가 다시 시작한다. **현재 구현은 Update 기반이다.** 코루틴이 자연스럽다는 설명은 했지만 기력 회복을 코루틴으로 바꾸라는 요청/수정은 없었다. 버서커 타이머 변경과 혼동하지 않는다.
+- OnHpChanged/OnStaminaChanged가 현재값·최대값을 전달한다. PlayerStatUI는 HealthSlider/StaminaSlider에 SetValueWithoutNotify(current/max)로 표시한다. 초기 EnergySlider 이름은 사용자가 StaminaSlider로 변경했다.
+- Time.time/Time.deltaTime을 사용하므로 포효의 timeScale=0 동안 기력 회복 대기도 멈춘다.
+
+### 패링·버서커 게이지 UI — 구현됨
+
+- `ParryUI`가 ParryGaugeUI/BerserkerGaugeUI 참조, 플레이어 컴포넌트 참조, 이벤트 연결, 모드 전환을 담당한다. **각 Gauge UI에 Init(character)를 옮긴 변경은 사용자 요청으로 되돌렸다.**
+- `ParryGaugeUI`: Slider/gaugeMark/gaugeGlow 보관. `SetGaugeMark(cost,maxGauge)`로 눈금 기준을 설정하고 `SetValue(normalizedGauge)`로 값과 준비 완료 발광을 표시한다. BerserkerGaugeUI는 Slider/빨간 Glow와 값 표시만 담당한다.
+- 현재 세로 BottomToTop 슬라이더다. 눈금은 Fill Area 아래의 Image이며 부모 영역의 가로 중앙, 비용/최대 게이지 높이에 앵커를 둔다. Glow는 기존 슬라이더 위에 겹친 Image다.
+- 사용자 이미지 `Assets/Art/UI/ParryGaugeMark.png`, `GaugeGlow.png`를 사용한다. 흰 Glow를 Image 색으로 패링 파랑·버서커 빨강으로 표시한다. Glow 스프라이트의 border는 Sprite Editor 데이터 제공자를 통해 (8,8,8,8)로 설정했고 Image.Type=Sliced다. 원본 PNG 색을 편집한 것이 아니다.
+- 평소 패링 게이지, 버서커 진입 시 버서커 게이지만 켠다. EnterBerserker/ExitBerserker 이벤트로 전환한다. 모드와 게이지 값을 합친 bool/float 매 프레임 표시 전환 구조는 제거했다.
+- 파랑 Glow는 패링 게이지가 비용 이상일 때 켠다. 이는 게이지 충족 표시이며 공격·쿨타임 등 모든 발동 조건을 의미하지 않는다. 빨강 Glow는 버서커 게이지가 0보다 클 때 켠다. 맥동/블룸/추가 애니메이션은 구현하지 않았다.
+
+### 버서커 시간과 패링·피격 — 구현됨
+
+- **RemainingSeconds는 float**, NormalizedRemainingTime은 `RemainingSeconds/duration`이다. 포효가 끝난 뒤 Update에서 Time.deltaTime만큼 감소한다. 0이면 EndBerserker(false). 정수 1초 Countdown 코루틴·countdownStepStartTime·보간 계산은 제거했다.
+- OnRemainingTimeChanged로 UI를 부드럽게 갱신한다. 포효·게임 정지에서는 감소하지 않는다. 패링 게이지의 기존 갱신 방식은 별도로 유지했다.
+- 실제 PlayerCharacter.TakeDamage에서 패링·구르기 무적·피격 무적 판정을 통과하고 Stats.TakeDamage 직후 ReduceTimeOnHit를 호출한다. 버서커일 때 timeLossOnHit만큼 감소, 소진 시 자동 종료하여 저장 참격을 버린다.
+- PlayerParry.TryParryHit 성공 시 버서커 중이면 RecoverTimeOnParry, 평소에는 gauge.GainOnParrySuccess. 시간은 최초 duration까지 회복하며 버서커 중 일반 패링 게이지는 획득하지 않는다.
+- **버서커 중 패링 성공 시 시간 회복은 이미 요청받고 구현한 기능이다.** 사용자가 마지막에 재확인했다. 반격의 버서커 참격 1개 저장은 별도 미연결 항목이며 이번 작업에 추가하지 않았다.
+
+### SkillUI·쿨타임 — 구현됨 / 사용자 정상 동작 확인
+
+- `SkillUI`는 ParrySkillSet/BerserkerInterSkillSet/BerserkerExitSkillSet의 세 SkillIconUI를 관리한다. 현재 종료 오브젝트 이름에는 끝 공백이 있으므로 이름 기반 도구 작성 시 확인한다.
+- `SkillIconUI`가 BlindImage와 TMP cooldownText를 보관한다. SetCooldown은 **Time.time+쿨타임으로 계산한 사용 가능 절대 시각**을 받는다. UI가 남은 시간을 계산한다. 플레이어에서 매 프레임 남은 쿨타임을 보내지 않는다.
+- 1초 초과는 올림 정수 초, 1초 이하는 올림 0.1초 단위로 표시한다. Update에서 검사하되 표시 단위가 바뀔 때만 문자열을 갱신한다. 게임 시간 기준이라 포효 중에는 쿨타임 표시도 멈춘다.
+- PlayerParry.OnCooldownChanged: 패링 시도 때 Time.time+parryCooldown, 성공할 때 Time.time+successCooldown으로 다시 발행한다. 실패한 시도는 쿨타임을 새로 만들지 않는다.
+- PlayerBerseker.OnCooldownChanged는 **버서커 종료 시** Time.time+cooldown을 발행한다. 기존 종료 후 쿨타임 규칙을 바꾼 것이 아니다. 각 컴포넌트.InitUI에서도 현재 사용 가능 시각을 발행한다.
+- R은 버서커 전이면 진입 아이콘, 버서커 중이면 종료 아이콘만 활성화한다. 종료 아이콘은 BlindImage/쿨타임 텍스트가 있지만 사용하지 않는다.
+- 진입 아이콘의 Blind 조건은 `coolingDown || !resourceReady`, 텍스트 조건은 **coolingDown만**이다. 패링 게이지 부족과 관계없이 남은 쿨타임 숫자는 끝까지 보이고, 쿨타임이 끝난 뒤 게이지가 부족하면 Blind만 남는다.
+- **쿨타임이 안 보인다는 문의는 당시 사용자가 cooldown=0으로 설정한 것이 원인이었다. UI 버그가 아니며 사용자가 현재 정상 동작한다고 확인했다.** 미해결 버그로 인계하지 않는다.
+
+### 마지막 확인 값·검증 범위
+
+- 2026-11-18 인계 직전 실제 Player.prefab 및 열린 씬: 버서커 비용30/지속10/쿨타임180, 피격 시간 감소1/패링 시간 회복1, 최대 기력100/회복 간격1/회복량10, 구르기 비용20. Player.prefab 시작 패링 게이지20. 사용자 값이므로 과거 비용1/쿨타임0/게이지100으로 되돌리지 않는다.
+- Git 작업 트리에는 Player.prefab, SampleScene, Player 관련 스크립트, UIManager, ProjectSettings/TimeManager.asset 수정과 UI 스크립트·이미지 미추적 파일이 있다. TimeManager 변경도 사용자 변경으로 보존한다.
+- 각 작업 당시 컴파일·Play 검증: 체력/기력 초기 표시와 갱신, 회복 대기/재소비/상한, 버서커 연속 시간 감소와 정지/만료, 패링 시간 회복/상한/일반 게이지 미획득, 실제 피격·무적 경로, 눈금/파랑·빨강 Glow, SkillUI 표시 단위·성공 쿨타임 교체·R 전환·게이지 조건·자동 쿨타임 완료를 확인했다. 이후 사용자 직접 수정 전체를 과거 테스트가 보장하지 않는다.
+- 이번 인계에서는 새 Play 테스트를 실행하지 않았다. 읽기 확인 결과 SampleScene, Edit 모드, scene.isDirty=false다. 테스트 때 켰던 Run In Background override는 off로 복원했다.
+- Unity 도구가 Start 직후 Busy/연결 끊김을 반환할 수 있다. domain reload/컴파일 완료를 확인한다. 백그라운드에서 프레임이 멈추면 단순 스크린샷만으로 실행을 검증하지 않는다. 필요 시 unity-cli의 references/playmode-verification-loop.md를 따른다. CLI 버전 업데이트는 사용자 승인 없이 실행하지 않았다.
 
 ## 현재 구현과 대화 — 2026-11-17 우선 읽기
 

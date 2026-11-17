@@ -17,7 +17,7 @@ namespace Parry.UIClass
             criticalDamagePrefab.PrewarmPool();
         }
 
-        public void Spawn(MonsterHitContext context, Vector3 position)
+        public void Spawn(ref MonsterHitContext context, Vector3 position)
         {
             Spawn(context.Damage, position, context.AttackType, context.IsCritical);
         }

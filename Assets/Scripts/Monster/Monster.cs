@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using Parry.CombatClass;
@@ -35,6 +36,17 @@ namespace Parry.MonsterClass
         [SerializeField] private int count;
 
         public float Hp => hp;
+        public float MaxHp { get; private set; }
+        public event Action<float, float> OnHpChanged;
+        public event Action<int, int> OnFlinchResistanceChanged;
+        public event Action<float, float> OnStoredDamageChanged;
+
+        public void InitUI()
+        {
+            OnHpChanged?.Invoke(hp, MaxHp);
+            OnFlinchResistanceChanged?.Invoke(currentFlinchResistance, flinchData.resistance);
+            OnStoredDamageChanged?.Invoke(totalDamage, hp);
+        }
         public int CurrentFlinchResistance => currentFlinchResistance;
         public float TotalDamage => totalDamage;
         public int Count => count;
@@ -61,18 +73,27 @@ namespace Parry.MonsterClass
                 originalColor = spriteRenderer.color;
         }
 
+        private void Start()
+        {
+            MonsterStatUI statUI = GetComponentInChildren<MonsterStatUI>(true);
+            if (statUI != null)
+                statUI.Init(this);
+        }
+
         public void Initialize(MonsterBaseStats stats, MonsterFlinchData flinchData = default)
         {
             StopAllCoroutines();
             StopHitFlash();
             hp = stats.maxHp;
+            MaxHp = stats.maxHp;
             this.flinchData = flinchData;
             ResetFlinchResistance();
             IsExecuting = false;
             ClearStoredDamage();
+            OnHpChanged?.Invoke(hp, MaxHp);
         }
 
-        public void TakeDamage(MonsterHitContext context)
+        public void TakeDamage(ref MonsterHitContext context)
         {
             float damage = context.Damage;
             if (IsDead || IsExecuting || !isActiveAndEnabled)
@@ -82,12 +103,12 @@ namespace Parry.MonsterClass
                 ReduceFlinchResistance();
             
             if (context.IsBerserking)
-                TakeBerserkerDamage(context);
+                TakeBerserkerDamage(ref context);
             else
-                TakeNormalDamage(context);
+                TakeNormalDamage(ref context);
         }
 
-        private void TakeBerserkerDamage(MonsterHitContext context)
+        private void TakeBerserkerDamage(ref MonsterHitContext context)
         {
             float remainingHp = Mathf.Max(0f, hp - context.Damage);
             bool bCanExecute = totalDamage + context.StoredDamage > remainingHp;
@@ -101,7 +122,7 @@ namespace Parry.MonsterClass
                     context.Berseker.ExecutionEffectPrefab, transform.position);
             }
             
-            TakeNormalDamage(context);
+            TakeNormalDamage(ref context);
             
             if (!IsExecuting && (IsDead || context.StoredDamage <= 0f))
                 return;
@@ -115,24 +136,35 @@ namespace Parry.MonsterClass
 
             totalDamage += context.StoredDamage;
             count += context.SlashStackCount;
+            OnStoredDamageChanged?.Invoke(totalDamage, hp);
 
             if (bCanExecute)
                 StartBurstStoredDamage();
         }
 
-        private void TakeNormalDamage(MonsterHitContext context)
+        private void TakeNormalDamage(ref MonsterHitContext context)
         {
-            DamageNumberSpawner.Instance.Spawn(context, GetDamageSpawnPosition());
+            DamageNumberSpawner.Instance.Spawn(ref context, GetDamageSpawnPosition());
             
             ApplyDamage(context.Damage);
         }
 
+        //실제 데미지 적용
         private void ApplyDamage(float damage)
         {
             if (IsDead)
                 return;
             
             hp = Mathf.Max(0f, hp - damage);
+            OnHpChanged?.Invoke(hp, MaxHp);
+            
+            if (IsDead)
+            {
+                currentFlinchResistance = 0;
+                OnFlinchResistanceChanged?.Invoke(currentFlinchResistance, flinchData.resistance);
+            }
+            
+            OnStoredDamageChanged?.Invoke(totalDamage, hp);
             
             if (IsDead && !IsExecuting)
             {
@@ -191,8 +223,8 @@ namespace Parry.MonsterClass
         {
             Bounds bounds = bodyCollider.bounds;
             return new Vector3(
-                Random.Range(bounds.min.x, bounds.max.x),
-                Random.Range(bounds.min.y, bounds.max.y),
+                UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
+                UnityEngine.Random.Range(bounds.min.y, bounds.max.y),
                 bounds.center.z);
         }
 
@@ -202,11 +234,16 @@ namespace Parry.MonsterClass
                 return;
 
             currentFlinchResistance--;
+            OnFlinchResistanceChanged?.Invoke(currentFlinchResistance, flinchData.resistance);
             if (currentFlinchResistance == 0)
                 Flinch();
         }
 
-        public void ResetFlinchResistance() => currentFlinchResistance = flinchData.resistance;
+        public void ResetFlinchResistance()
+        {
+            currentFlinchResistance = flinchData.resistance;
+            OnFlinchResistanceChanged?.Invoke(currentFlinchResistance, flinchData.resistance);
+        }
 
         public void Flinch()
         {
@@ -265,6 +302,7 @@ namespace Parry.MonsterClass
 
             totalDamage = 0f;
             count = 0;
+            OnStoredDamageChanged?.Invoke(totalDamage, hp);
         }
 
         private IEnumerator HitFlash()

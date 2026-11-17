@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aeffce18038ac0d4fbc36b9b9818ce6c, type: 3}
+  m_Name: PlayerData
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.PlayerClass.PlayerData
+  character:
+    rollCooldown: 0.12
+    rollStaminaCost: 20
+    attackHitPlaybackSpeed: 0.7
+    rollClip: {fileID: 7400000, guid: b6624a883557a4441b531c7f496a5886, type: 2}
+    rollInvulnerabilityDuration: 0.2
+  stats:
+    maxHp: 100
+    maxStamina: 100
+    staminaRecoveryInterval: 1
+    staminaRecoveryAmount: 10
+    parryCounterDamage: 10
+    criticalChance: 10
+    damageVariancePercent: 10
+  movement:
+    moveSpeed: 6
+    jumpSpeed: 12
+    groundCheckDistance: 0.06
+    groundLayers:
+      serializedVersion: 2
+      m_Bits: 1
+    rollSpeed: 8
+  attack:
+    attacks:
+    - {fileID: 11400000, guid: 9e75bae284cc464186624341ce2c8c1e, type: 2}
+    - {fileID: 11400000, guid: 9ff1f01ea4594667a9a2c5b118ab9e18, type: 2}
+    - {fileID: 11400000, guid: 52b073703bfc4583bf0cd19f2882c7ec, type: 2}
+    berserkerAttacks:
+    - {fileID: 11400000, guid: 21c27445aa104807a95a7d23f14befc8, type: 2}
+    - {fileID: 11400000, guid: 42c30d397eec490998e20d094fc47712, type: 2}
+    - {fileID: 11400000, guid: f3ef079d4a854b339642dfd4c5384519, type: 2}
+    berserkerStoredDamagePercent: 50
+    comboResetDuration: 1
+    targetLayers:
+      serializedVersion: 2
+      m_Bits: 256
+    thirdHitEffectPrefab: {fileID: 8789356129846487138, guid: 16f37df59265a864b9a2536537398af9, type: 3}
+  parry:
+    shieldBubblePrefab: {fileID: 6019359720757292468, guid: 426aac89a40b76042b7f98776bff83dc, type: 3}
+    parryHitPrefab: {fileID: 140391268012203193, guid: 755a7684ebb6b524cb04c810772e375a, type: 3}
+    shieldEffectOffset: {x: 0, y: 0.65, z: 0}
+    parryClip: {fileID: 7400000, guid: 7c2bf5549f8787b40a7f1991047d3c3c, type: 2}
+    parryDuration: 0.3
+    parryCooldown: 3
+    successCooldown: 0.2
+  parryGauge:
+    maxGauge: 100
+    gaugePerParry: 15
+    decayPerSecond: 0
+    maxAttackBonus: 0.5
+    initialGauge: 20
+  berserker:
+    gaugeCost: 30
+    duration: 10
+    cooldown: 180
+    timeLossOnHit: 1
+    timeRecoveryOnParry: 1
+    auraVfx: {fileID: 8703667979743427324, guid: 8b5d2d38b0a49864dbd95f050b36873a, type: 3}
+    auraOffset: {x: 0, y: 0, z: 0}
+    burserkerHitVfx: {fileID: 8082543711907361596, guid: 08bd33ddc9cf7cf44a75656729522e18, type: 3}
+    burserkerExecutionVfx: {fileID: 4461413366454188522, guid: 654770b9a96b1544ea40c61969a9cb53, type: 3}
+    roarClip: {fileID: 7400000, guid: fe068c135b0c5f645a6cc62d0b87c6d7, type: 2}
+  hitReaction:
+    hurtClip: {fileID: 7400000, guid: a402ac4bc90998745b1897ed0d1ea379, type: 2}
+    faintClip: {fileID: 7400000, guid: 1c54c5eac25a3b6408b30b765cee5160, type: 2}
+    getUpClip: {fileID: 7400000, guid: 39c2baee9dd591c458aad311c1025607, type: 2}
+    normalHit:
+      duration: 0.2
+    heavyHit:
+      duration: 0.35
+    extraInvulnerability: 0.15
+    faintHoldDuration: 0.35

@@ -5,16 +5,23 @@ namespace Parry.CameraClass
 {
     [DisallowMultipleComponent]
     [RequireComponent(typeof(CinemachineImpulseSource))]
-    public sealed class CameraFeedback : Singleton<CameraFeedback>
+    public sealed class CameraFeedback : MonoBehaviour
     {
+        public static CameraFeedback Instance { get; private set; }
+
         [SerializeField] private float impulseIntensityWithPlayerHit = 1.0f;
         [SerializeField] private float impulseIntensityWithPlayerAttack = 1.0f;
         private CinemachineImpulseSource impulseSource;
 
-        protected override void Awake()
+        private void Awake()
         {
-            base.Awake();
+            Instance = this;
             impulseSource = GetComponent<CinemachineImpulseSource>();
+        }
+
+        private void OnDestroy()
+        {
+            Instance = null;
         }
 
         //플레이어가 맞았을때

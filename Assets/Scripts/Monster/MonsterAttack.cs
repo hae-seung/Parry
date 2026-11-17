@@ -125,7 +125,7 @@ namespace Parry.MonsterClass
                     continue;
 
                 // 같은 플레이어의 콜라이더가 여러 개 잡혀도 피해는 한 번만 준다.
-                target.TakeDamage(context);
+                target.TakeDamage(ref context);
             }
         }
 

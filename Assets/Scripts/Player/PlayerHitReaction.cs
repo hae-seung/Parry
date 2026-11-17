@@ -4,7 +4,6 @@ using Parry.AnimationClass;
 using Parry.CombatClass;
 using Parry.MonsterClass;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace Parry.PlayerClass
 {
@@ -23,17 +22,7 @@ namespace Parry.PlayerClass
         private PlayerMovement movement;
         private AnimationClipPlayer clipPlayer;
 
-        [SerializeField] private AnimationClip hurtClip;
-        [FormerlySerializedAs("knockdownClip")]
-        [SerializeField] private AnimationClip faintClip;
-        [SerializeField] private AnimationClip getUpClip;
-        [SerializeField] private PlayerHitReactionSettings normalHit = new PlayerHitReactionSettings { duration = 0.2f };
-        [SerializeField] private PlayerHitReactionSettings heavyHit = new PlayerHitReactionSettings { duration = 0.35f };
-        [Tooltip("일반 피격 경직이 끝난 뒤 추가로 보호하는 시간(초)입니다. 피격 무적 중 추가 타격은 무적 시간을 연장하지 않습니다.")]
-        [SerializeField, Min(0f)] private float extraInvulnerability = 0.15f;
-        [Tooltip("무릎을 꿇는 모션이 끝난 뒤 일어나기 전 기다리는 시간(초)입니다.")]
-        [FormerlySerializedAs("knockdownHoldDuration")]
-        [SerializeField, Min(0f)] private float faintHoldDuration = 0.35f;
+        private PlayerHitReactionData data;
 
         private Coroutine reactionCoroutine;
         private float hitInvulnerabilityEndTime;
@@ -43,25 +32,26 @@ namespace Parry.PlayerClass
         public bool IsFainted { get; private set; }
         public bool IsInvulnerable => bIsInvulnerableWhileFainted || Time.time < hitInvulnerabilityEndTime;
 
-        private void Awake()
+        public void Initialize(PlayerHitReactionData data)
         {
+            this.data = data;
             movement = GetComponent<PlayerMovement>();
             clipPlayer = GetComponent<AnimationClipPlayer>();
         }
 
         private void OnDisable() => CancelReaction();
 
-        public void StartReaction(AttackHitContext context)
+        public void StartReaction(ref AttackHitContext context)
         {
             //CancelReaction();
             
-            PlayerHitReactionSettings settings = context.AttackType == MonsterAttackType.Heavy ? heavyHit : normalHit;
+            PlayerHitReactionSettings settings = context.AttackType == MonsterAttackType.Heavy ? data.heavyHit : data.normalHit;
             
             IsReacting = context.CanKnockback || context.CausesFaint;
             
             //강공으로 인한 기절 상태시 다시 일어날때까지 무적을 유지해야함.
             bIsInvulnerableWhileFainted = context.CausesFaint;
-            hitInvulnerabilityEndTime = Time.time + settings.duration + extraInvulnerability;
+            hitInvulnerabilityEndTime = Time.time + settings.duration + data.extraInvulnerability;
             
             if (IsReacting)
                 movement.CancelJump();
@@ -90,7 +80,7 @@ namespace Parry.PlayerClass
             // 흰색 프레임을 제외한 넉백 자세를 유지하며 설정한 경직 시간을 기다린다.
             if (canKnockback)
             {
-                clipPlayer.Play(hurtClip, true);
+                clipPlayer.Play(data.hurtClip, true);
             }
             
             yield return new WaitForSeconds(duration);
@@ -102,14 +92,14 @@ namespace Parry.PlayerClass
             if (causesFaint)
             {
                 IsFainted = true;
-                clipPlayer.Play(faintClip, true);
+                clipPlayer.Play(data.faintClip, true);
                 
-                yield return new WaitForSeconds(faintClip.length + faintHoldDuration);
+                yield return new WaitForSeconds(data.faintClip.length + data.faintHoldDuration);
 
                 // 기상 클립이 완전히 끝날 때까지 행동 금지와 무적을 유지한다.
-                clipPlayer.Play(getUpClip);
+                clipPlayer.Play(data.getUpClip);
                 
-                while (clipPlayer.IsPlayingClip(getUpClip))
+                while (clipPlayer.IsPlayingClip(data.getUpClip))
                 {
                     yield return null;
                 }
@@ -139,8 +129,8 @@ namespace Parry.PlayerClass
             
             movement.StopKnockback();
 
-            bool playingReaction = clipPlayer.IsPlayingClip(hurtClip) ||
-                clipPlayer.IsPlayingClip(faintClip) || clipPlayer.IsPlayingClip(getUpClip);
+            bool playingReaction = clipPlayer.IsPlayingClip(data.hurtClip) ||
+                clipPlayer.IsPlayingClip(data.faintClip) || clipPlayer.IsPlayingClip(data.getUpClip);
             
             if (playingReaction)
                 clipPlayer.Stop();

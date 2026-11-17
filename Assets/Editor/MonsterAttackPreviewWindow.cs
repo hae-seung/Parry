@@ -176,11 +176,11 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         }
         else if (source != null && source.TryGetComponent<PlayerAttack>(out var player))
         {
-            // 런타임 공격 컴포넌트에 등록된 목록을 그대로 사용한다.
-            var data = new SerializedObject(player);
+            // 플레이어가 사용하는 공통 데이터의 일반·버서커 공격 목록을 읽는다.
+            var data = new SerializedObject(player.GetComponent<PlayerCharacter>().Data);
             foreach (string listName in new[] { "attacks", "berserkerAttacks" })
             {
-                var attackList = data.FindProperty(listName);
+                var attackList = data.FindProperty("attack").FindPropertyRelative(listName);
                 for (int i = 0; i < attackList.arraySize; i++)
                 {
                     var attack = attackList.GetArrayElementAtIndex(i).objectReferenceValue as PlayerAttackData;

@@ -1,6 +1,8 @@
+using System;
 using Parry.CombatClass;
 using Parry.AnimationClass;
 using Parry.CameraClass;
+using Parry.UIClass;
 using UnityEngine;
 
 namespace Parry.PlayerClass
@@ -11,13 +13,10 @@ namespace Parry.PlayerClass
     [RequireComponent(typeof(PlayerBerseker))]
     public sealed class PlayerCharacter : MonoBehaviour
     {
-        [SerializeField, Min(0f)] private float rollCooldown = 0.3f;
-        [SerializeField, Min(0f)] private float rollStaminaCost = 20f;
-        [Tooltip("공격 적중 후 남은 공격 애니메이션의 재생 배율입니다. 1은 정상 속도입니다.")]
-        [SerializeField, Range(0.01f, 1f)] private float attackHitPlaybackSpeed = 0.7f;
-        [SerializeField] private AnimationClip rollClip;
-        [Tooltip("구르기 시작부터 완벽회피로 피해와 피격 반응을 막는 시간(초)입니다. 구르기가 끝나면 무적도 종료됩니다.")]
-        [SerializeField, Min(0f)] private float rollInvulnerabilityDuration = 0.1f;
+        [SerializeField] private PlayerData data;
+        public PlayerData Data => data;
+
+        private PlayerCharacterData characterData;
 
         private float lastRollTime;
         private float rollInvulnerabilityEndTime;
@@ -28,6 +27,9 @@ namespace Parry.PlayerClass
         private PlayerHitReaction hitReaction;
         private AnimationClipPlayer clipPlayer;
         public PlayerStatComponent Stats { get; private set; }
+        public PlayerParryGauge ParryGauge { get; private set; }
+        public PlayerBerseker PlayerBerserker { get; private set; }
+        public PlayerParry PlayerParryComponent => parry;
         public bool IsDead => Stats.IsDead;
 
         public bool IsGrounded => movement.IsGrounded;
@@ -48,8 +50,24 @@ namespace Parry.PlayerClass
             attack = GetComponent<PlayerAttack>();
             parry = GetComponent<PlayerParry>();
             berseker = GetComponent<PlayerBerseker>();
+            PlayerBerserker = berseker;
+            ParryGauge = GetComponent<PlayerParryGauge>();
             hitReaction = GetComponent<PlayerHitReaction>();
             clipPlayer = GetComponent<AnimationClipPlayer>();
+
+            characterData = data.Character;
+            Stats.Initialize(data.Stats);
+            movement.Initialize(data.Movement);
+            attack.Initialize(data.Attack);
+            parry.Initialize(data.Parry);
+            ParryGauge.Initialize(data.ParryGauge);
+            berseker.Initialize(data.Berserker);
+            hitReaction.Initialize(data.HitReaction);
+        }
+
+        private void Start()
+        {
+            UIManager.Instance.Init(this);
         }
 
         private void OnDisable()
@@ -80,7 +98,7 @@ namespace Parry.PlayerClass
         
 
         // 적의 공격을 받으면 플레이어가 방어 여부를 판단한 뒤 체력에 반영한다.
-        public void TakeDamage(AttackHitContext context)
+        public void TakeDamage(ref AttackHitContext context)
         {
             bool validHit = isActiveAndEnabled && !IsDead && context.Damage > 0f && !float.IsInfinity(context.Damage);
             
@@ -91,8 +109,9 @@ namespace Parry.PlayerClass
             {
                 parry.PlaySuccessEffects(context.Attacker.transform.position);
                 
-                context.Attacker.TakeDamage(
-                    Stats.CreateMonsterHit(Stats.ParryCounterDamage, PlayerAttackType.ParryCounter));
+                MonsterHitContext counterContext =
+                    Stats.CreateMonsterHit(Stats.ParryCounterDamage, PlayerAttackType.ParryCounter);
+                context.Attacker.TakeDamage(ref counterContext);
                 
                 
                 return;
@@ -114,6 +133,7 @@ namespace Parry.PlayerClass
             
 
             Stats.TakeDamage(context.Damage);
+            berseker.ReduceTimeOnHit();
             CameraFeedback.Instance.ShakePlayerHit();
             
             bool interruptsAction = context.CanKnockback || context.CausesFaint || IsDead;
@@ -132,13 +152,13 @@ namespace Parry.PlayerClass
                 return;
             }
 
-            hitReaction.StartReaction(context);
+            hitReaction.StartReaction(ref context);
         }
 
         public void PlayHitStop()
         {
             // PlayerAttack이 실제 공격 적중을 확인한 뒤 호출한다.
-            clipPlayer.SetSpeed(attackHitPlaybackSpeed);
+            clipPlayer.SetSpeed(characterData.attackHitPlaybackSpeed);
             CameraFeedback.Instance.ShakePlayerAttack();
         }
 
@@ -153,29 +173,29 @@ namespace Parry.PlayerClass
             if (!IsGrounded || isBusy)
                 return;
 
-            bool cooldownReady = Time.time >= lastRollTime + rollCooldown;
-            bool animationReady = clipPlayer.CanPlay && rollClip != null;
+            bool cooldownReady = Time.time >= lastRollTime + characterData.rollCooldown;
+            bool animationReady = clipPlayer.CanPlay && characterData.rollClip != null;
             if (!cooldownReady || !animationReady)
                 return;
 
-            if (!Stats.TryConsumeStamina(rollStaminaCost))
+            if (!Stats.TryConsumeStamina(characterData.rollStaminaCost))
                 return;
 
             //공격을 캔슬하고 구르기 가능
             if (attack.IsAttacking)
                 attack.CancelAttack();
             
-            clipPlayer.Play(rollClip);
+            clipPlayer.Play(characterData.rollClip);
 
             movement.FaceMoveInput();
             IsRolling = true;
-            rollInvulnerabilityEndTime = Time.time + rollInvulnerabilityDuration;
+            rollInvulnerabilityEndTime = Time.time + characterData.rollInvulnerabilityDuration;
             movement.CancelJump();
         }
 
         public void EndRoll()
         {
-            if (clipPlayer.IsPlayingClip(rollClip))
+            if (clipPlayer.IsPlayingClip(characterData.rollClip))
                 clipPlayer.Stop();
             
             IsRolling = false;

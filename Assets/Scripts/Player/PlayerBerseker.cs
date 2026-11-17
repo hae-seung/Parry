@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using Parry.AnimationClass;
 
@@ -9,39 +8,35 @@ namespace Parry.PlayerClass
     [RequireComponent(typeof(PlayerParryGauge))]
     public sealed class PlayerBerseker : MonoBehaviour
     {
-        [Tooltip("버서커 진입 시 필요한 게이지이자 소비량입니다.")]
-        [SerializeField, Min(1f)] private float gaugeCost = 70f;
-        [Tooltip("버서커 지속시간(초)입니다. 현재 기본값은 조절용 임시값입니다.")]
-        [SerializeField, Min(1)] private int duration = 10;
-        [Tooltip("버서커 종료 후 다음 진입까지의 대기시간(초)입니다.")]
-        [SerializeField, Min(0f)] private float cooldown = 3f;
-        [SerializeField] private GameObject auraVfx;
-        [SerializeField] private Vector3 auraOffset;
-        [SerializeField] private GameObject burserkerHitVfx;
-        [SerializeField] private GameObject burserkerExecutionVfx;
-        [SerializeField] private AnimationClip roarClip;
+        private PlayerBerserkerData data;
+
         [SerializeField] private bool roaring;
 
         private PlayerParryGauge gauge;
         private PlayerCharacter character;
         private PlayerMovement movement;
         private AnimationClipPlayer clipPlayer;
-        private Coroutine countdownCoroutine;
         private GameObject auraInstance;
         private float timeScaleBeforeRoar;
         private float nextBerserkerTime;
-        private WaitForSeconds waitBersekerTime = new WaitForSeconds(1.0f);
 
         public event Action<GameObject> OnBurstStoredSlashes;
         public event Action OnDiscardStoredSlashes;
+        public event Action EnterBerserker;
+        public event Action ExitBerserker;
+        public event Action<float> OnRemainingTimeChanged;
+        public event Action<float> OnCooldownChanged;
 
         public bool IsBerserking { get; private set; }
-        public int RemainingSeconds { get; private set; }
+        public float GaugeCost => data.gaugeCost;
+        public float RemainingSeconds { get; private set; }
+        public float NormalizedRemainingTime => RemainingSeconds / data.duration;
         public bool IsRoaring => roaring;
-        public GameObject ExecutionEffectPrefab => burserkerExecutionVfx;
+        public GameObject ExecutionEffectPrefab => data.burserkerExecutionVfx;
 
-        private void Awake()
+        public void Initialize(PlayerBerserkerData data)
         {
+            this.data = data;
             gauge = GetComponent<PlayerParryGauge>();
             character = GetComponent<PlayerCharacter>();
             movement = GetComponent<PlayerMovement>();
@@ -49,7 +44,47 @@ namespace Parry.PlayerClass
         }
 
         private void OnDisable() => EndBerserker(false);
+
+        private void Update()
+        {
+            if (character.IsDead)
+                return;
+            
+            if (!IsBerserking || roaring)
+                return;
+
+            //버서커모드 남은 지속시간
+            RemainingSeconds = Mathf.Max(0f, RemainingSeconds - Time.deltaTime);
+            OnRemainingTimeChanged?.Invoke(NormalizedRemainingTime);
+
+            if (RemainingSeconds <= 0f)
+                EndBerserker(false);
+        }
         
+        public void InitUI()
+        {
+            OnRemainingTimeChanged?.Invoke(NormalizedRemainingTime);
+            OnCooldownChanged?.Invoke(nextBerserkerTime);
+        }
+
+        public void ReduceTimeOnHit()
+        {
+            if (!IsBerserking)
+                return;
+
+            RemainingSeconds = Mathf.Max(0f, RemainingSeconds - data.timeLossOnHit);
+            OnRemainingTimeChanged?.Invoke(NormalizedRemainingTime);
+
+            if (RemainingSeconds <= 0f)
+                EndBerserker(false);
+        }
+
+        public void RecoverTimeOnParry()
+        {
+            RemainingSeconds = Mathf.Min(data.duration, RemainingSeconds + data.timeRecoveryOnParry);
+            OnRemainingTimeChanged?.Invoke(NormalizedRemainingTime);
+        }
+
         //버서커 On/Off
         public void ToggleBerserker()
         {
@@ -70,21 +105,24 @@ namespace Parry.PlayerClass
             if (!CanEnterBerserker())
                 return;
 
-            if (gauge.TryConsume(gaugeCost))
+            if (gauge.TryConsume(data.gaugeCost))
             {
                 roaring = true;
                 
                 timeScaleBeforeRoar = Time.timeScale;
-                clipPlayer.Play(roarClip, false, true);
+                clipPlayer.Play(data.roarClip, false, true);
                 Time.timeScale = 0f;
                 
                 IsBerserking = true;
-                RemainingSeconds = duration;
+                RemainingSeconds = data.duration;
+                OnRemainingTimeChanged?.Invoke(NormalizedRemainingTime);
                 
                 auraInstance = ObjectPoolManager.Instance.SpawnObject(
-                    auraVfx, 
-                    transform.position + auraOffset, 
+                    data.auraVfx, 
+                    transform.position + data.auraOffset, 
                     transform);
+                
+                EnterBerserker?.Invoke();
             }
         }
 
@@ -116,7 +154,6 @@ namespace Parry.PlayerClass
         public void EndRoar()
         {
             StopRoar();
-            countdownCoroutine = StartCoroutine(Countdown());
         }
 
         // 정상 완료와 비활성화 정리에서 공통으로 포효 재생과 게임 정지를 해제한다.
@@ -127,18 +164,6 @@ namespace Parry.PlayerClass
             clipPlayer.Stop();
         }
 
-        private IEnumerator Countdown()
-        {
-            while (RemainingSeconds > 0)
-            {
-                yield return waitBersekerTime;
-                RemainingSeconds--;
-            }
-
-            countdownCoroutine = null;
-            EndBerserker(false);
-        }
-
         
         //버서커 Off
         public void EndBerserker(bool releaseSlashes)
@@ -147,30 +172,28 @@ namespace Parry.PlayerClass
                 return;
 
             IsBerserking = false;
-            nextBerserkerTime = Time.time + cooldown;
+            nextBerserkerTime = Time.time + data.cooldown;
+            OnCooldownChanged?.Invoke(nextBerserkerTime);
             
             RemainingSeconds = 0;
+            OnRemainingTimeChanged?.Invoke(NormalizedRemainingTime);
 
             if (auraInstance != null)
                 auraInstance.GetComponent<PooledObject>().Release();
             auraInstance = null;
-
-            if (countdownCoroutine != null)
-            {
-                StopCoroutine(countdownCoroutine);
-                countdownCoroutine = null;
-            }
 
             //스스로 R을 눌러 참격을 터뜨린 경우에만 피해를 입힘
             if (releaseSlashes)
                 BurstStoredSlashes();
             else
                 DiscardStoredSlashes();
+            
+            ExitBerserker?.Invoke();
         }
 
         private void BurstStoredSlashes()
         {
-            OnBurstStoredSlashes?.Invoke(burserkerHitVfx);
+            OnBurstStoredSlashes?.Invoke(data.burserkerHitVfx);
         }
 
         private void DiscardStoredSlashes()

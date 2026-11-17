@@ -448,6 +448,81 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 197687896}
   m_CullTransparentMesh: 1
+--- !u!1 &223265511
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 223265512}
+  - component: {fileID: 223265514}
+  - component: {fileID: 223265513}
+  m_Layer: 0
+  m_Name: GaugeGlow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &223265512
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 223265511}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1047653534}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -0.050899506, y: -0.09500122}
+  m_SizeDelta: {x: 14.6881, y: 14.190002}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &223265513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 223265511}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.15, g: 0.55, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: -7719487335887027746, guid: 09f5379601e84c2408c3e186199cc5ff, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 0.5
+--- !u!222 &223265514
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 223265511}
+  m_CullTransparentMesh: 1
 --- !u!1 &247206844
 GameObject:
   m_ObjectHideFlags: 0
@@ -457,10 +532,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 247206845}
-  - component: {fileID: 247206846}
   - component: {fileID: 247206849}
   - component: {fileID: 247206848}
   - component: {fileID: 247206847}
+  - component: {fileID: 247206846}
   m_Layer: 0
   m_Name: UIManager
   m_TagString: Untagged
@@ -502,6 +577,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0d0667001a7ff3143ba25575d1775ed4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.UIManager
+  playerStatUI: {fileID: 1428070196}
+  parryUI: {fileID: 723272564}
+  skillUI: {fileID: 313873143}
 --- !u!114 &247206847
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -647,8 +725,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 313873139}
+  - component: {fileID: 313873142}
   - component: {fileID: 313873141}
   - component: {fileID: 313873140}
+  - component: {fileID: 313873143}
   m_Layer: 0
   m_Name: SkillUI
   m_TagString: Untagged
@@ -718,6 +798,45 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!223 &313873142
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 313873138}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 25
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!114 &313873143
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 313873138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9409096c6f3ac7a4bab8a974fb9c2a2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.SkillUI
+  parrySkill: {fileID: 1755493284}
+  berserkerEnterSkill: {fileID: 890436679}
+  berserkerExitSkill: {fileID: 821061767}
 --- !u!1 &341835502
 GameObject:
   m_ObjectHideFlags: 0
@@ -736,7 +855,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &341835503
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1316,7 +1435,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &521396807
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1696,7 +1815,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &678342000
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1900,8 +2019,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 723272562}
+  - component: {fileID: 723272563}
+  - component: {fileID: 723272564}
   m_Layer: 0
-  m_Name: ParryUI
+  m_Name: ParryUISet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1928,6 +2049,44 @@ RectTransform:
   m_AnchoredPosition: {x: 135, y: 0}
   m_SizeDelta: {x: 45.644, y: 428.5736}
   m_Pivot: {x: 0, y: 0.5}
+--- !u!223 &723272563
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723272561}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!114 &723272564
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723272561}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a60fd13725090a741ac75edfd4bff013, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.ParryUI
+  parryGaugeUI: {fileID: 1047653536}
+  berserkerGaugeUI: {fileID: 2089825408}
 --- !u!1 &821061765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1937,13 +2096,14 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 821061766}
+  - component: {fileID: 821061767}
   m_Layer: 0
   m_Name: 'BerserkerExitSkillSet '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &821061766
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1962,11 +2122,25 @@ RectTransform:
   - {fileID: 2108911061}
   m_Father: {fileID: 313873139}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 500, y: -100}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &821061767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 821061765}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9332bad7e429e544bb8a5e5e04da65aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.SkillIconUI
+  blindImage: {fileID: 874534984}
+  cooldownText: {fileID: 2108911062}
 --- !u!1001 &821394527
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1979,13 +2153,25 @@ PrefabInstance:
       propertyPath: m_Name
       value: Goblin
       objectReference: {fileID: 0}
+    - target: {fileID: 2686128367526364517, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2686128367526364517, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2759032718434132388, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_TargetGraphic
+      value: 
+      objectReference: {fileID: 0}
     - target: {fileID: 4753100789934121056, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.45
       objectReference: {fileID: 0}
     - target: {fileID: 4753100789934121056, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -2.06
+      value: -2.08
       objectReference: {fileID: 0}
     - target: {fileID: 4753100789934121056, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2019,6 +2205,26 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6662610131254879209, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7301899989173155928, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7301899989173155928, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7436956661116590074, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7436956661116590074, guid: 1e9016a0542f3784ba3f7d5d1f4d5b1a, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -2047,7 +2253,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &874534982
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2127,6 +2333,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 890436678}
+  - component: {fileID: 890436679}
   m_Layer: 0
   m_Name: BerserkerInterSkillSet
   m_TagString: Untagged
@@ -2157,6 +2364,20 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &890436679
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 890436677}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9332bad7e429e544bb8a5e5e04da65aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.SkillIconUI
+  blindImage: {fileID: 197687899}
+  cooldownText: {fileID: 521396808}
 --- !u!1 &1047653533
 GameObject:
   m_ObjectHideFlags: 0
@@ -2167,6 +2388,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1047653534}
   - component: {fileID: 1047653535}
+  - component: {fileID: 1047653536}
   m_Layer: 0
   m_Name: ParrySlider
   m_TagString: Untagged
@@ -2188,6 +2410,7 @@ RectTransform:
   m_Children:
   - {fileID: 1838896133}
   - {fileID: 2012570722}
+  - {fileID: 223265512}
   m_Father: {fileID: 723272562}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -2242,10 +2465,25 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 0
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &1047653536
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1047653533}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1c3b76e3a55fba4ca29e68a723322cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.ParryGaugeUI
+  slider: {fileID: 1047653535}
+  gaugeMark: {fileID: 1783077582}
+  gaugeGlow: {fileID: 223265513}
 --- !u!1 &1072479036
 GameObject:
   m_ObjectHideFlags: 0
@@ -2912,7 +3150,7 @@ GameObject:
   - component: {fileID: 1357351589}
   - component: {fileID: 1357351590}
   m_Layer: 0
-  m_Name: EnergySlider
+  m_Name: StaminaSlider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2999,8 +3237,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1428070192}
+  - component: {fileID: 1428070195}
   - component: {fileID: 1428070194}
   - component: {fileID: 1428070193}
+  - component: {fileID: 1428070196}
   m_Layer: 0
   m_Name: PlayerStatUI
   m_TagString: Untagged
@@ -3069,6 +3309,119 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!223 &1428070195
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1428070191}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_UseReflectionProbes: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
+--- !u!114 &1428070196
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1428070191}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0416de3bb42e70a4abe2358423d57438, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.PlayerStatUI
+  healthSlider: {fileID: 1740981977}
+  staminaSlider: {fileID: 1357351590}
+--- !u!1 &1444694520
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1444694523}
+  - component: {fileID: 1444694522}
+  - component: {fileID: 1444694521}
+  m_Layer: 0
+  m_Name: GaugeGlow
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!114 &1444694521
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444694520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 0.15, b: 0.12, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: -7719487335887027746, guid: 09f5379601e84c2408c3e186199cc5ff, type: 3}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 0.5
+--- !u!222 &1444694522
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444694520}
+  m_CullTransparentMesh: 1
+--- !u!224 &1444694523
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1444694520}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2089825406}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: -0.050899506, y: -0.09500122}
+  m_SizeDelta: {x: 14.688099, y: 14.190002}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1451503403
 GameObject:
   m_ObjectHideFlags: 0
@@ -3628,6 +3981,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1755493283}
+  - component: {fileID: 1755493284}
   m_Layer: 0
   m_Name: ParrySkillSet
   m_TagString: Untagged
@@ -3658,6 +4012,20 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 200, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1755493284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1755493282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9332bad7e429e544bb8a5e5e04da65aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.SkillIconUI
+  blindImage: {fileID: 341835505}
+  cooldownText: {fileID: 678342001}
 --- !u!1 &1773645199
 GameObject:
   m_ObjectHideFlags: 0
@@ -3706,6 +4074,81 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1783077580
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1783077581}
+  - component: {fileID: 1783077583}
+  - component: {fileID: 1783077582}
+  m_Layer: 0
+  m_Name: GaugeMark
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1783077581
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1783077580}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2012570722}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.01}
+  m_AnchorMax: {x: 0.5, y: 0.01}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 53.644, y: 8}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1783077582
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1783077580}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 8507970193316726418, guid: b39e37b51b889ce418c12a47eeebb1af, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1783077583
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1783077580}
+  m_CullTransparentMesh: 1
 --- !u!1 &1792682608
 GameObject:
   m_ObjectHideFlags: 0
@@ -3920,106 +4363,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
   m_BlendShapeWeights: []
---- !u!1 &1831250555
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1831250558}
-  - component: {fileID: 1831250557}
-  - component: {fileID: 1831250556}
-  m_Layer: 0
-  m_Name: CameraFeedback(Singleton)
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1831250556
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1831250555}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc7c84cd2917a6d47b81c3ae1c3b31ca, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Parry.CameraClass.CameraFeedback
-  impulseIntensityWithPlayerHit: 2
-  impulseIntensityWithPlayerAttack: 0.45
---- !u!114 &1831250557
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1831250555}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 180ecf9b41d478f468eb3e9083753217, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineImpulseSource
-  ImpulseDefinition:
-    ImpulseChannel: 1
-    ImpulseShape: 2
-    CustomImpulseShape:
-      serializedVersion: 2
-      m_Curve: []
-      m_PreInfinity: 2
-      m_PostInfinity: 2
-      m_RotationOrder: 4
-    ImpulseDuration: 0.12
-    ImpulseType: 0
-    DissipationRate: 0.25
-    RawSignal: {fileID: 0}
-    AmplitudeGain: 1
-    FrequencyGain: 1
-    RepeatMode: 0
-    Randomize: 1
-    TimeEnvelope:
-      AttackShape:
-        serializedVersion: 2
-        m_Curve: []
-        m_PreInfinity: 2
-        m_PostInfinity: 2
-        m_RotationOrder: 4
-      DecayShape:
-        serializedVersion: 2
-        m_Curve: []
-        m_PreInfinity: 2
-        m_PostInfinity: 2
-        m_RotationOrder: 4
-      AttackTime: 0
-      SustainTime: 0.2
-      DecayTime: 0.7
-      ScaleWithImpact: 1
-      HoldForever: 0
-    ImpactRadius: 100
-    DirectionMode: 0
-    DissipationMode: 2
-    DissipationDistance: 100
-    PropagationSpeed: 343
-  DefaultVelocity: {x: 0.024, y: -0.032, z: 0}
---- !u!4 &1831250558
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1831250555}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1838896132
 GameObject:
   m_ObjectHideFlags: 0
@@ -4181,6 +4524,8 @@ GameObject:
   - component: {fileID: 1960887338}
   - component: {fileID: 1960887337}
   - component: {fileID: 1960887336}
+  - component: {fileID: 1960887340}
+  - component: {fileID: 1960887339}
   m_Layer: 0
   m_Name: Player Cinemachine Camera
   m_TagString: Untagged
@@ -4270,6 +4615,73 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1098139360}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1960887339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960887335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc7c84cd2917a6d47b81c3ae1c3b31ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.CameraClass.CameraFeedback
+  impulseIntensityWithPlayerHit: 2
+  impulseIntensityWithPlayerAttack: 0.45
+--- !u!114 &1960887340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1960887335}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 180ecf9b41d478f468eb3e9083753217, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineImpulseSource
+  ImpulseDefinition:
+    ImpulseChannel: 1
+    ImpulseShape: 2
+    CustomImpulseShape:
+      serializedVersion: 2
+      m_Curve: []
+      m_PreInfinity: 2
+      m_PostInfinity: 2
+      m_RotationOrder: 4
+    ImpulseDuration: 0.12
+    ImpulseType: 0
+    DissipationRate: 0.25
+    RawSignal: {fileID: 0}
+    AmplitudeGain: 1
+    FrequencyGain: 1
+    RepeatMode: 0
+    Randomize: 1
+    TimeEnvelope:
+      AttackShape:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      DecayShape:
+        serializedVersion: 2
+        m_Curve: []
+        m_PreInfinity: 2
+        m_PostInfinity: 2
+        m_RotationOrder: 4
+      AttackTime: 0
+      SustainTime: 0.2
+      DecayTime: 0.7
+      ScaleWithImpact: 1
+      HoldForever: 0
+    ImpactRadius: 100
+    DirectionMode: 0
+    DissipationMode: 2
+    DissipationDistance: 100
+    PropagationSpeed: 343
+  DefaultVelocity: {x: 0.024, y: -0.032, z: 0}
 --- !u!1 &2012384074
 GameObject:
   m_ObjectHideFlags: 0
@@ -4303,7 +4715,7 @@ RectTransform:
   m_Father: {fileID: 302129656}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0.305}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
@@ -4374,6 +4786,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 88751118}
+  - {fileID: 1783077581}
   m_Father: {fileID: 1047653534}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4528,13 +4941,14 @@ GameObject:
   m_Component:
   - component: {fileID: 2089825406}
   - component: {fileID: 2089825407}
+  - component: {fileID: 2089825408}
   m_Layer: 0
   m_Name: BerserkerSlider
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2089825406
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4549,6 +4963,7 @@ RectTransform:
   m_Children:
   - {fileID: 708628008}
   - {fileID: 302129656}
+  - {fileID: 1444694523}
   m_Father: {fileID: 723272562}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4607,6 +5022,20 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &2089825408
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2089825405}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71c07962f3c1eb9469de1a6985defcd0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.UIClass.BerserkerGaugeUI
+  slider: {fileID: 2089825407}
+  gaugeGlow: {fileID: 1444694521}
 --- !u!1 &2108911060
 GameObject:
   m_ObjectHideFlags: 0
@@ -4624,7 +5053,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &2108911061
 RectTransform:
   m_ObjectHideFlags: 0
@@ -4901,7 +5330,6 @@ SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 459750440}
-  - {fileID: 1831250558}
   - {fileID: 1098139360}
   - {fileID: 619394802}
   - {fileID: 1086069295}

@@ -13,13 +13,7 @@ namespace Parry.PlayerClass
         private AnimationClipPlayer clipPlayer;
         private PlayerBerseker berseker;
 
-        [SerializeField] private List<PlayerAttackData> attacks = new List<PlayerAttackData>();
-        [SerializeField] private List<BerserkerAttackData> berserkerAttacks = new List<BerserkerAttackData>();
-        [Tooltip("버서커 공격의 최종 피해 중 참격으로 추가 저장할 비율(%)입니다.")]
-        [SerializeField, Range(0f, 100f)] private float berserkerStoredDamagePercent = 50f;
-        [SerializeField, Min(0f)] private float comboResetDuration = 1f;
-        [SerializeField] private LayerMask targetLayers;
-        [SerializeField] private GameObject thirdHitEffectPrefab;
+        private PlayerAttackSetData data;
 
         private readonly HashSet<Monster> hitTargetSet = new HashSet<Monster>();
         private readonly List<Collider2D> hitResults = new List<Collider2D>(16);
@@ -36,16 +30,17 @@ namespace Parry.PlayerClass
 
         public bool IsAttacking => bIsAttacking;
 
-        private bool CanContinueCombo => Time.time - lastAttackTime < comboResetDuration;
+        private bool CanContinueCombo => Time.time - lastAttackTime < data.comboResetDuration;
 
-        private void Awake()
+        public void Initialize(PlayerAttackSetData data)
         {
+            this.data = data;
             character = GetComponent<PlayerCharacter>();
             clipPlayer = GetComponent<AnimationClipPlayer>();
             berseker = GetComponent<PlayerBerseker>();
 
             hitFilter = new ContactFilter2D();
-            hitFilter.SetLayerMask(targetLayers);
+            hitFilter.SetLayerMask(data.targetLayers);
             hitFilter.useTriggers = true;
         }
 
@@ -63,7 +58,7 @@ namespace Parry.PlayerClass
             if (!character.IsGrounded || isBusy)
                 return false;
 
-            bool hasAttacks = attacks.Count > 0;
+            bool hasAttacks = data.attacks.Count > 0;
             
             return isActiveAndEnabled && clipPlayer.CanPlay && hasAttacks;
         }
@@ -81,7 +76,7 @@ namespace Parry.PlayerClass
 
             //3타 -> 1타로는 예약 불가
             //1타->2타->3타가 한묶음
-            if (!bCanReserveNextAttack || attackIndex >= attacks.Count)
+            if (!bCanReserveNextAttack || attackIndex >= data.attacks.Count)
                 return false;
 
             //예약 걸기
@@ -99,10 +94,10 @@ namespace Parry.PlayerClass
 
         private bool StartAttack(int index)
         {
-            index %= attacks.Count;
+            index %= data.attacks.Count;
 
             // 공격 시작 시 선택한 데이터는 모드가 끝나도 현재 공격이 끝날 때까지 유지한다.
-            PlayerAttackData nextAttack = berseker.IsBerserking ? berserkerAttacks[index] : attacks[index];
+            PlayerAttackData nextAttack = berseker.IsBerserking ? data.berserkerAttacks[index] : data.attacks[index];
             if (nextAttack == null || nextAttack.AnimationClip == null)
                 return false;
 
@@ -149,7 +144,7 @@ namespace Parry.PlayerClass
                     AddBerserkerInfo(ref hitContext);
                 }
 
-                target.TakeDamage(hitContext);
+                target.TakeDamage(ref hitContext);
 
                 // 3타가 실제로 적중한 대상마다 한 번만 표시한다.
                 if (attackIndex == 2)
@@ -175,8 +170,8 @@ namespace Parry.PlayerClass
             context.IsBerserking = true;
             context.Berseker = berseker;
 
-            context.SlashStackCount = berserkerAttacks[attackIndex].SlashStackCount;
-            context.StoredDamage = context.Damage * berserkerStoredDamagePercent * 0.01f;
+            context.SlashStackCount = data.berserkerAttacks[attackIndex].SlashStackCount;
+            context.StoredDamage = context.Damage * data.berserkerStoredDamagePercent * 0.01f;
         }
 
         // 공격 클립 끝의 Animation Event에서 호출한다.
@@ -215,7 +210,7 @@ namespace Parry.PlayerClass
 
         private void MakeThirdAttackEffect(Vector3 pos)
         {
-            GameObject effect = ObjectPoolManager.Instance.SpawnObject(thirdHitEffectPrefab, pos);
+            GameObject effect = ObjectPoolManager.Instance.SpawnObject(data.thirdHitEffectPrefab, pos);
             
             effect.GetComponent<SpriteRenderer>().flipX = attackDirection < 0;
         }

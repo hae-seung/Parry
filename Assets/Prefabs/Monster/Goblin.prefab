@@ -397,6 +397,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: MonsterStatCanvas
       objectReference: {fileID: 0}
+    - target: {fileID: 9219608851878194115, guid: c43f36d34b845c24f973757f0ae7a3eb, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

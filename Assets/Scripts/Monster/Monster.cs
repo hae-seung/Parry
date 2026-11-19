@@ -10,7 +10,7 @@ using Parry.AnimationClass;
 namespace Parry.MonsterClass
 {
     [RequireComponent(typeof(AnimationClipPlayer))]
-    public class Monster : MonoBehaviour
+    public class Monster : MonoBehaviour, ICombatTarget
     {
         [SerializeField, Min(0f)] private float hitFlashDuration = 0.12f;
         [SerializeField] private Color hitColor = Color.red;
@@ -51,6 +51,7 @@ namespace Parry.MonsterClass
         public float TotalDamage => totalDamage;
         public int Count => count;
         public bool IsDead => hp <= 0f;
+        public bool CanTakeDamage => isActiveAndEnabled && !IsDead && !IsExecuting;
         public bool IsExecuting { get; private set; }
         public bool IsFlinching => brain != null && brain.State is MonsterFlinchState;
         
@@ -82,24 +83,24 @@ namespace Parry.MonsterClass
 
         public void Initialize(MonsterBaseStats stats, MonsterFlinchData flinchData = default)
         {
-            StopAllCoroutines();
-            StopHitFlash();
             hp = stats.maxHp;
             MaxHp = stats.maxHp;
             this.flinchData = flinchData;
-            ResetFlinchResistance();
+            currentFlinchResistance = flinchData.resistance;
             IsExecuting = false;
-            ClearStoredDamage();
-            OnHpChanged?.Invoke(hp, MaxHp);
+            totalDamage = 0f;
+            count = 0;
         }
 
         public void TakeDamage(ref MonsterHitContext context)
         {
             float damage = context.Damage;
+            
             if (IsDead || IsExecuting || !isActiveAndEnabled)
                 return;
 
-            if (context.AttackType == PlayerAttackType.ParryCounter && brain != null)
+            //반격 데미지로 피가 0이되면 기절 상태로 안들어가고 바로 죽도록
+            if (context.AttackType == PlayerAttackType.ParryCounter && context.Damage < hp)
                 ReduceFlinchResistance();
             
             if (context.IsBerserking)
@@ -199,6 +200,7 @@ namespace Parry.MonsterClass
         private IEnumerator BurstDamageRoutine(float damage, int burstCount)
         {
             WaitForSeconds wait = new WaitForSeconds(burstHitInterval);
+            
             for (int i = 0; i < burstCount; i++)
             {
                 TakeBurstDamage(damage);
@@ -235,6 +237,7 @@ namespace Parry.MonsterClass
 
             currentFlinchResistance--;
             OnFlinchResistanceChanged?.Invoke(currentFlinchResistance, flinchData.resistance);
+            
             if (currentFlinchResistance == 0)
                 Flinch();
         }
@@ -273,6 +276,7 @@ namespace Parry.MonsterClass
         private void EnterDeadState()
         {
             IsExecuting = false;
+            
             ClearStoredDamage();
             StopHitFlash();
             

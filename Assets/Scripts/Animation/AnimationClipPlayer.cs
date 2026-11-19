@@ -17,6 +17,8 @@ namespace Parry.AnimationClass
         public bool CanPlay =>
             isActiveAndEnabled && animator != null && animator.isActiveAndEnabled;
         public bool IsPlaying => clipPlayable.IsValid();
+        public bool HasReachedEnd => IsPlaying &&
+            clipPlayable.GetTime() >= clipPlayable.GetAnimationClip().length;
 
         public bool IsPlayingClip(AnimationClip clip) =>
             IsPlaying && clipPlayable.GetAnimationClip() == clip;

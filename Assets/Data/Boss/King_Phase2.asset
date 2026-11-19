@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c82f8831cbb4fb43991afd0f7745493, type: 3}
+  m_Name: King_Phase2
+  m_EditorClassIdentifier: Assembly-CSharp::Parry.BossClass.BossPhaseData
+  bossName: "\uC655 \xB7 2\uD398\uC774\uC988"
+  baseStats:
+    maxHp: 100
+    moveSpeed: 2
+  settings:
+    deathClip: {fileID: 7400000, guid: 40a43d1af88391446bc5f7daea75b73f, type: 2}
+    burstHitInterval: 0.1
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 512
+  dialogues:
+  - text: "\uB098\uC758...\uC655\uAD6D\uC774..."
+    duration: 1.5
+  attacks:
+  - {fileID: 11400000, guid: f8a108bb15071404f9698759d97f5aab, type: 2}
+  - {fileID: 11400000, guid: 874e743c74b45d94aa703e4e4131c6fe, type: 2}
+  - {fileID: 11400000, guid: abf68038d350d7745aeb77e52d1a5c93, type: 2}
+  - {fileID: 11400000, guid: 6f21a8b372a639344bf3c0602425a98a, type: 2}
+  flinch:
+    faintClip: {fileID: 7400000, guid: ce5170b3c6fd4314b8dce6aef1f150e7, type: 2}
+    wakeUpClip: {fileID: 7400000, guid: e5854e9aee59e654181c4496e27b97da, type: 2}
+    duration: 3
+    resistance: 1
+  groundLayers:
+    serializedVersion: 2
+    m_Bits: 1
+  wander:
+    radius: 3
+    waitDuration: 1
+    travelTimeout: 3
+    arrivalDistance: 0.1
+  detection:
+    obstacleLayers:
+      serializedVersion: 2
+      m_Bits: 1
+    distance: 10
+    heightTolerance: 0.5
+  chase:
+    stopDistance: 2.2
+  combat:
+    combatExitDistance: 9
+    sightLossDuration: 3

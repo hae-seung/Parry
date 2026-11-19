@@ -1,4 +1,5 @@
 using UnityEngine;
+using Brain = Parry.Brain;
 
 namespace Parry.MonsterClass
 {
@@ -6,10 +7,8 @@ namespace Parry.MonsterClass
         typeof(MonsterMovement), 
         typeof(MonsterSensor))]
     [RequireComponent(typeof(MonsterAttack))]
-    public sealed class MonsterBrain : MonoBehaviour
+    public sealed class MonsterBrain : Brain
     {
-        private readonly MonsterStateMachine stateMachine = new MonsterStateMachine();
-
         private Monster monster;
         private MonsterMovement movement;
         private MonsterSensor sensor;
@@ -18,7 +17,6 @@ namespace Parry.MonsterClass
         [SerializeField] private MonsterData data;
         private MonsterCombatPolicy combatPolicy;
 
-        public IMonsterState State => stateMachine.CurrentState;
         public MonsterData Data => data;
         public MonsterChaseState ChaseState { get; private set; }
         public MonsterWanderState WanderState { get; private set; }
@@ -64,26 +62,13 @@ namespace Parry.MonsterClass
 
         private void OnEnable()
         {
-            stateMachine.ChangeState(WanderState);
+            ChangeState(WanderState);
         }
 
-        private void Update()
+        protected override void OnDisable()
         {
-            if (Time.timeScale == 0f)
-                return;
-
-            stateMachine.Tick();
-        }
-
-        private void OnDisable()
-        {
-            stateMachine.Clear();
+            base.OnDisable();
             movement.Stop();
-        }
-
-        public void ChangeState(IMonsterState nextState)
-        {
-            stateMachine.ChangeState(nextState);
         }
 
         public bool ShouldEndCombat() => combatPolicy.ShouldEndCombat();

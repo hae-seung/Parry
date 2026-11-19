@@ -1,6 +1,179 @@
 # Parry 개발 세션 인계
 
-갱신: 2026-11-18 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+갱신: 2026-11-19 (Asia/Seoul). 프로젝트: `D:/GitHub/Parry`.
+
+## 최종 인계 — 2026-11-19 왕 누적 피해·처형·2페이즈 진입 및 초기화
+
+이 절과 최신 파일을 먼저 읽는다. 아래 이전 인계의 방향 불일치, 기절 코루틴, HP 0 무조건 최종 사망 설명은 이 절로 대체한다.
+
+- **설계 기준:** 같은 역할은 최신 일반 몬스터 코드의 이름, 호출 순서, 데이터 구조를 기준으로 맞춘다. Brain은 참조와 페이즈 데이터를 관리하고 초기화 시 필요한 데이터만 컴포넌트에 넘긴다. 상태는 기절·기상 등 자기 동작을 직접 수행하고 Brain은 상태 전이와 Tick 호출을 담당한다. 보스별 차이는 해당 책임이 있는 곳에 둔다.
+- **공격:** 일반 몬스터처럼 Brain에서 Face 후 TryStartAttack을 호출하고 성공하면 AttackState로 전이한다. BossAttack은 시작 시 attackDirection을 저장하며 왕 4번 중간 FaceTarget에서 갱신한다. Attack.Initialize(Data.Attacks)에서 목록을 받고 List<float> 쿨타임을 0으로 채운다. TryStartAttack은 저장된 목록만 사용한다.
+- **기절:** BossFlinchState.Enter에서 공격·이동을 멈추고 다운 클립을 마지막 프레임 유지로 재생한다. Tick이 진입부터 duration만큼 기다린 다음 기상 클립을 재생하고, 완료 후 저항을 복구해 Wander로 돌아간다. 다운 클립 길이를 duration에 더하지 않는다. Exit에서 클립을 정리한다. Boss.IsFlinching은 상태로 판정한다. 왕과 일반 몬스터 모두 치명적인 패링 반격의 자세 저항 감소를 건너뛴다.
+- **버서커:** Boss가 컨텍스트로 저장 피해와 참격 수를 받고 플레이어 폭발·폐기 이벤트를 구독한다. 폭발 시작·폐기·사망·비활성화로 구독과 저장량이 정리된다. 타격은 최대 10회이며 기본 간격은 0.1초다. 폭발 루프는 정해진 횟수만큼 돈다. 피해 숫자는 표시하고, 이미 HP 0이면 ApplyDamage 첫 가드에서 실제 피해만 건너뛴다.
+- **처형과 HP 0:** IsExecuting은 Boss가 소유한다. 저장 피해 합이 직접 피해 적용 후 남을 HP를 초과하면 처형을 시작한다. 기존 처형 이펙트는 생성만 하며 코루틴에 인스턴스를 넘기지 않는다. 일반 HP 0은 즉시, 처형 중 HP 0은 폭발 코루틴 종료 후에 BossBrain.EnterNextPhaseOrDeadState()를 호출한다. 최신 이름은 EnterNextPhaseOrDeadState이고 이전 CheckNextPhase는 사용하지 않는다.
+- **2페이즈 진입:** BossBrain의 직렬화된 phases 목록과 phaseIndex가 기준이고 Data는 phases[phaseIndex]다. 다음 인덱스가 있으면 인덱스를 올리고 PhaseTransitionState에 진입한 뒤 InitComponents()를 호출한다. 마지막 페이즈면 DeadState로 간다. 왕 프리팹에는 King_Phase1과 공격 목록이 비어 있는 King_Phase2가 연결돼 있다. 전환 상태는 새 페이즈 Data의 faintClip을 쓰고 자세를 유지한다. 클립 종료 후 StartDialogue()가 로그를 한 번 남긴다. 실제 대사·기상·HP 충전·2페이즈 전투 재개는 미구현이다.
+- **활성화와 재활용이 다음 확인 지점:** 최신 Awake는 참조와 상태/전투 정책을 만들고 InitComponents는 호출하지 않는다. OnEnable은 phaseIndex를 0으로 돌리고 InitComponents로 이동·감지·공격·기절 저항을 적용한다. 현재 OnEnable에는 WanderState 진입이 없어 최초 전투 FSM 시작이 아직 연결되지 않았다. 배회·추적·기절 상태와 전투 정책은 Awake의 1페이즈 설정을 들고 있다. 이를 언제 갱신할지는 실제 2페이즈 설정을 붙일 때 확인한다. 재활용 의도는 신규 전투로 시작하는 것이며, HP와 Rigidbody2D.simulated 복구, 사망 후 풀 반환은 아직 구현하지 않았다. 현재 Boss.EndDeath는 Destroy한다.
+- **검증 및 Git:** 최신 변경은 코드와 에셋 참조만 확인했으며 Unity Play 검증은 하지 않았다. main에 스테이징 없이 기존 수정·삭제·미추적 파일이 남아 있다. 보스 신규 코드·데이터·프리팹도 미추적이다. 인계 저장은 이 문서 갱신이며 커밋·푸시는 하지 않았다.
+
+## 이전 인계 — 2026-11-19 왕 1페이즈 공격 완료·사망·코루틴 기절/기상
+
+**이 절과 실제 최신 파일이 아래 이전 인계 및 BOSS-DESIGN.md의 중간 구현 기록보다 우선한다.** 이번 인계 요청에서는 코드·씬·에셋을 수정하지 않고 이 문서만 갱신했다. 아래 구현과 검증은 인계 직전까지 진행한 세션 전체의 결과다.
+
+### 다음 세션 시작
+
+1. 실제 코드·데이터·Git 작업 트리부터 다시 읽는다. `main`에 사용자 수정·삭제·미추적 에셋이 많다. 임의 정리·복원·커밋·푸시하지 않는다.
+2. **사용자는 일반 몬스터·플레이어와 왕의 1페이즈 공격을 완료된 범위로 선언했다.** 2페이즈 공격을 만들기 전에 왕 사망과 기절부터 구현하자고 했으며, 현재 사망·기절/기상까지 구현·검증했다. 다음 단계는 후속 지시를 받고 진행한다. 이 인계 자체를 2페이즈 구현 요청으로 해석하지 않는다.
+3. 일반 몬스터와 보스의 구체적인 Brain·State는 분리한다. 최소 `Brain`, `IMonsterState`, `MonsterStateMachine`과 이동·감지·클립 재생 컴포넌트만 재사용한다. 공통 EnemyBrain, 행동 인터페이스, 전이 델리게이트 등을 다시 도입하지 않는다.
+4. 아래의 **방향 처리 코드 불일치**를 다음 작업 전에 확인한다. 이번 인계에서는 수정하지 않았다. 사용자가 계속 직접 편집하므로 대화의 설명보다 현재 파일을 우선한다.
+
+### 현재 보스 FSM·감지·거리
+
+- `Assets/Scripts/Boss/BossBrain.cs`: `Boss`, `MonsterMovement`, `MonsterSensor`, `BossAttack` 초기화와 보스 전용 Wander/Chase/Attack/Flinch/Dead 상태 생성. 별도 Update는 없고 상속된 Brain.Tick을 사용한다. OnEnable은 HP 0이면 Dead, 아니면 Wander다.
+- `BossWanderState`에서 감지 시 `BossChaseState`로 직접 전이한다. 추적 상태는 공격 가능한 패턴을 먼저 시도하고, 불가능하면 마지막 목격 위치까지 추적한다. 거리 초과·감지 소실은 기존 `MonsterCombatPolicy`로 판단한다.
+- 공격 선택 거리는 **플레이어 Transform 위치와 `Movement.Position` 사이의 2D 거리**다. 몸 일부가 Range 원에 닿는 것과 다르다. 추적 정지 거리는 수평 거리이고, 감지 높이는 양쪽 Collider의 `bounds.min.y` 차이다.
+- 공격 쿨타임은 **해당 패턴 시작 시점부터** 계산한다. 첫 공격의 ready time은 모두 0이다. 고블린 1번은 cooldown 0인 반면 왕은 각 패턴이 3초여서 반복 속도가 다르다.
+- 거리 부족으로 공격이 안 된 것을 Play에서 확인했고, 실제 거리 조건을 만족시키면 같은 프레임에 공격 상태로 전이하는 것도 확인했다. 당시 stopDistance 2.2, 실제 2D 거리 약 2.78이었다. 왕 Range를 모두 3으로 맞춘 뒤 사용자가 추가 편집했다.
+- **인계 시 실제 `King_Phase1.asset`**: speed 2 / groundLayers 1 / 배회 radius 3, wait 1, timeout 3, arrival 0.1 / detection distance 10, heightTolerance 0.5, obstacleLayers 1 / chase stopDistance 2.2 / combat exitDistance 9, sightLossDuration 3.
+- **인계 시 실제 공격 Range는 1번 3, 2·3·4번 3.5**다. 네 패턴 모두 cooldown 3 / attackEndDelayDuration 0.5. 이전에 전부 3이라고 설명한 값으로 원복하지 않는다.
+- KingController의 현재 Idle→Walk는 Speed > 0.01, Walk→Idle는 Speed < 0.01이다. 예전 >0 / <0.1의 겹치는 조건이 애니메이션 전이 반복 문제였다. 사용자의 클립 타이밍·전환 편집을 보존한다.
+
+### 공격 데이터 — Main/Sub 설계는 폐기됨
+
+- **최종 구조는 한 공격 패턴 = 한 AnimationClip이다.** 왕 4번도 `King_Attack4.anim` 하나에 1타+3타 동작을 담았다. 중간에 만들었던 Main/Sub 클립 연결, `SubAttacks`, `StartNextCombo`, `FinishCombo`, `IsComboPlaying`, 별도 콤보 종료 Update는 제거했다. 되살리지 않는다.
+- `BossAttackData : ScriptableObject`: 클립, distanceCondition, range, cooldown, attackEndDelayDuration만 보관한다. MonsterAttackData를 상속하지 않는다. 일반 몬스터의 `MonsterAttackData`는 기존 단일 타격 구조·sealed 그대로다.
+- `BossPhaseData.Attacks`는 `List<BossAttackData>`. 실제 패턴 에셋은 `Assets/Data/Boss/Attacks/King_Attack1~4.asset`. 페이즈 교체 기능 자체는 아직 없다.
+- `BossAttackHitData : ScriptableObject`: 피해량, MonsterAttackType, 넉백 여부·거리, **독립적인 causesFaint**, hitboxOffset/Size. **각 `.anim` 파일 안에 서브 에셋으로 저장**되고 해당 Animation Event의 Object 인자가 직접 참조한다.
+- `BossAttack.ApplyAttackHit(BossAttackHitData hitData)`가 데이터를 직접 받는다. AnimationEvent 전체를 받거나 이벤트 시간으로 키를 만드는 방식은 사용자 요청으로 제거했다.
+- **`appliedHits` 필드·초기화·중복 검사는 전부 제거했다.** 동일 HitData라도 이벤트가 오면 타격한다. `hitTargets`는 한 번의 OverlapBox에서 플레이어의 여러 Collider가 잡혀도 한 번만 피해를 주는 별도 용도이므로 남아 있다.
+- `BossAttackState`는 클립 재생 종료를 기다린 뒤 패턴의 후딜레이를 한 번 적용하고 Wander/Chase로 돌아간다. `BossAttack.Update`는 없다.
+- 왕 4번 첫 타격은 Normal+밀림, 두 번째는 Heavy+밀림·기절이다. 현재 이벤트는 시작 SpawnAttackEffect, 두 번의 ApplyAttackHit, 중간 FaceTarget이다. 타격별 수치·히트박스·타이밍은 사용자가 편집 중이므로 재설정하지 않는다.
+- `ICombatTarget`에는 Transform transform / CanTakeDamage / TakeDamage 접점이 있다. `AttackHitContext.Attacker`는 이 인터페이스이고, MonsterAttackData 및 BossAttackHitData 생성자 오버로드가 있다. 기존 플레이어 피격·패링·반격 경로로 왕 타격도 전달한다.
+
+### 편집 도구 — 이벤트 관리는 Animation 창에서만
+
+- `Tools/Parry/Boss Attack Clip` → `Assets/Editor/BossAttackClipWindow.cs`: 기존 타격 이벤트의 데이터만 편집한다. **이벤트 추가·삭제·시간 편집 기능은 사용자 요청으로 없앴다.** 해당 작업은 기본 Animation 창에서 직접 한다.
+- `BossAttackClipEvents.EnsureHitData`는 이미 있는 ApplyAttackHit 이벤트의 Object 인자가 비었을 때만 새 내부 HitData를 연결한다. 이벤트 자체를 추가·삭제·이동하지 않는다. 새로고침 또는 미리보기 목록 갱신 시 사용한다.
+- `.anim` 내부 ScriptableObject 생성은 이 에디터 코드의 `AssetDatabase.AddObjectToAsset` 처리다. 기본 Unity UI에서 Object 칸에 넣는 것만으로 클립 내부에 복사되는 것은 아니다. 독립 `.asset`를 참조하는 방식도 가능하지만 현재는 내부 저장을 사용한다.
+- `BossAttackDataEditor`의 버튼으로도 클립 타격 편집 창을 연다.
+- `Tools/Parry/Attack Preview` → 기존 `MonsterAttackPreviewWindow.cs`에 **보스 지원을 추가**했다. 보스의 클립 안 타격 이벤트별 항목이 나와 4번의 첫/둘째 타격을 각각 선택할 수 있다. 해당 프레임 모션, 좌우 반전, Scene 핸들로 offset·크기 편집 및 저장을 지원한다.
+- Attack Preview의 **주황 원 = 패턴 Range**, 청록 박스 = 실제 히트박스. Range는 미리보기 캐릭터 Transform 원점 중심이며 실제 공격 선택의 2D 거리와 같다. 보스의 여러 타격은 같은 패턴 Range를 공유한다. 일반 몬스터도 표시하고 플레이어에는 AI Range 항목을 숨긴다.
+- Range 수치·표시 토글·원 안/밖 조건 설명·공격 목록 새로고침을 제공한다. 이벤트를 Animation 창에서 편집한 뒤 목록을 갱신하면 된다. 에디터는 UI Toolkit 기반이며 일반 몬스터·플레이어 미리보기도 유지했다.
+
+### 왕 피벗·4번 알림 이펙트
+
+- 사용 에셋은 `Assets/AssetStoreImport/Medieval King Pack 2`. 왕의 **10개 시트 / 46개 Sprite 피벗을 (80,6)픽셀 = normalized (0.5, 6/111)**로 통일했다. Idle의 발바닥 선 기준이며 Run의 공중 자세·Fall·Death도 같은 좌표를 사용해 프레임 전환 시 기준이 바뀌지 않는다.
+- ISpriteEditorDataProvider와 EditPivot capability 검사를 사용했다. 이름·슬라이스 rect·spriteID·GUID/local fileID 보존 및 임포트된 pivot을 검증했다. `.meta`를 수동 편집한 것이 아니다.
+- 피벗 변경 당시 콜라이더와 공격 offset을 일괄 재설정하지 않았다. 사용자가 이후 직접 조절했다. **인계 시 SampleScene 왕**은 위치 (-3.79,-2.75), scale (1.5,1.5,1), BoxCollider offset 약 (0.0282,0.8542), size 약 (1.4886,1.8410)이다. 예전 중앙 피벗·Collider 크기로 복구하지 않는다.
+- 4번 0초의 `SpawnAttackEffect(BossAttackEffectData)` 이벤트가 `ComboTell` 서브 에셋을 참조한다. 데이터에는 이펙트 프리팹과 offset이 있다. 현재 offset은 **(-0.5625, 3.1875)**로 새 발 피벗과 현재 scale 1.5의 칼끝에 맞췄다.
+- offset은 현재 런타임에서 월드 단위로 더하며 X만 `Movement.FacingDirection`으로 반전한다. 다른 스케일로 왕을 바꾸면 다시 확인한다.
+- `Assets/Prefabs/Effects/King_ComboTell.prefab`, `Assets/Animations/Effects/King_ComboTell.anim/.controller`: Star_Twinkle 금빛 반짝임 18프레임을 약 0.3초 한 번 재생한다. 실제 사용하는 프레임 텍스처 **18개 모두 Point 필터**로 바꿨다.
+- 기존 ObjectPoolManager로 생성하고 왕 Transform 아래에 둔다. 이펙트 마지막 `EffectLifetime.EndEffect()` 이벤트가 스스로 풀에 반환한다. 새 타이머/Update로 관리하지 않는다. 실제 시작 이벤트·좌우 offset·자동 반환·같은 인스턴스 재사용·공격 취소 후 자체 종료를 검증했다.
+
+### 사망 — 구현됨
+
+- `Boss`는 여전히 Monster와 독립적이며 임시 maxHp 500을 Awake에서 적용한다. HP는 아직 페이즈 데이터로 옮기지 않았다.
+- TakeDamage에서 피해 적용·숫자 출력 후 HP 0이면 저항도 0으로 알리고 **즉시 BossDeadState로 전이**한다. 매 프레임 HP 검사 Update는 없다.
+- `BossDeadState.Enter`: 공격 취소, 이동 정지, Boss.PlayDeathAnimation. Rigidbody.simulated=false로 충돌을 끄고 King_Dead를 마지막 프레임 유지 모드로 재생한다.
+- Boss의 deathClip은 프리팹에 King_Dead로 연결했다. 클립 끝의 `EndDeath`가 OnDeath 이벤트를 발행한 뒤 Destroy한다. 재활성화해도 HP 0이면 Dead에 진입한다.
+- **현재 HP 0은 최종 사망으로 동작한다.** 1페이즈→2페이즈 전환/대사/별도 체력 충전, 저장 피해·처형 처리는 아직 미구현이다. 2페이즈 작업 때 기존 설계와 함께 연결해야 하며 지금 구현됐다고 주장하지 않는다.
+
+### 기절·기상 — 최종 구현은 코루틴
+
+- `King_Faint.anim`: Death의 **0,1,2,3** 프레임, `King_WakeUp.anim`: **3,2,1,0** 역순. 현재 각각 12fps, 약 0.333초, 비반복이며 사망 EndDeath 이벤트는 포함하지 않는다.
+- `BossFlinchData`는 BossPhaseData에 포함되며 faintClip / wakeUpClip / duration / resistance를 가진다. 실제 King_Phase1은 **duration 1초 / resistance 3회**.
+- 일반 공격은 자세 저항을 깎지 않는다. PlayerAttackType.ParryCounter마다 1 감소하고, 남아 있으면 공격을 유지하며 0이면 공격을 취소하고 BossFlinchState로 전이한다. HP 0 처리가 기절보다 우선한다.
+- **사용자 마지막 수정 지시: 플레이어처럼 코루틴으로 처리한다.** 별도 BossWakeUpState는 삭제했다. 기절/기상을 여러 상태로 다시 나누지 않는다.
+- `BossFlinchState`는 진입 시 공격·이동을 멈추고 Boss.StartFlinch를 호출한다. Tick은 `IsFlinching`이 false가 될 때까지 기다렸다 Wander로 돌아간다. Exit은 CancelFlinch다.
+- `Boss.FlinchRoutine`: Faint를 holdLastFrame=true로 재생 → `WaitUntil(clipPlayer.HasReachedEnd)` → `WaitForSeconds(duration)`로 마지막 자세 유지 → WakeUp 재생 → `IsPlayingClip(wakeUpClip)` 동안 yield null → 저항 복구 → IsFlinching=false.
+- `AnimationClipPlayer.HasReachedEnd`는 **이 코루틴의 실제 Faint 완료 확인에 사용**하는 읽기 전용 속성이다. BossAttack.Update 용도가 아니다.
+- **기절·WakeUp 모두 무적이 아니다.** 피해·사망이 가능하다. IsFlinching은 WakeUp 종료까지 true라 추가 반격이 저항을 음수로 만들거나 기절을 재시작하지 않는다. 저항은 WakeUp 완료 때만 복구한다.
+- 사망 전이로 기절 상태를 나가거나 Boss.OnDisable이 오면 코루틴을 중단하고 플래그를 정리한다. 사망 이후 코루틴이 뒤늦게 저항을 복구하는 것을 막았다.
+- `BossPostureUI.cs`와 `Assets/Prefabs/UI/BossPostureUI.prefab`: 기존 MonsterFlinchUI를 재사용해 **화면 하단 중앙 자세 게이지**를 추가했다. SampleScene의 UIManager 아래에 연결했다. 기준 해상도 1920x1080에서 600×14, anchored (0,80). 전체 보스 체력/처형 UI를 만든 것은 아니다.
+- UI는 OnFlinchResistanceChanged 구독 후 Boss.InitUI를 호출하고 OnDestroy에서 해제한다. 첫 Init에 Unbind를 넣지 않는다. OnDeath 때 UI를 숨긴다.
+
+### 다음에 확인할 실제 코드 불일치
+
+- 방향 고정에 관한 최종 대화는 **Brain에서 공격 전에 Face하고 공격 중 임의로 방향을 바꾸지 않으면 Movement.FacingDirection을 직접 써도 된다**는 내용이었다. 그런데 현재 BossAttack에는 `private int attackDirection`이 남아 있고, **대입은 FaceTarget에만 있으며 TryStartAttack의 대입은 없다.** ApplyAttackHit는 여전히 이 필드를 offset X와 AttackHitContext에 사용한다.
+- 현재 1~3번 클립은 ApplyAttackHit만 있고 FaceTarget은 없으며, 4번은 중간에만 FaceTarget이 있다. 따라서 첫 타격에서 기본값 0 또는 이전 방향을 사용할 수 있는 코드상 불일치다. 최신 코드를 다시 확인하고 사용자 의도에 맞춰 처리한다. **이 인계에서 이를 고치거나 attackDirection 초기화 코드를 임의 복원하지 않았다.**
+
+### 검증·현재 상태·Git
+
+- 실제 클립 이벤트로 1번/4번 플레이어 피해, Normal→Heavy/기절, 후딜레이를 검증했다. 이후 appliedHits 제거·사용자 방향 편집 등이 있으므로 과거 테스트가 현재 전체 타격 판정을 보장한다고 확대하지 않는다.
+- 에디터: 내부 HitData 저장/재임포트, 추가·삭제/Undo는 초기 버전에서 검증했고 **이벤트 관리 기능은 이후 제거**했다. 최종 버전에서는 기존 이벤트 수·시간을 유지한 데이터 연결, 수동 삭제 이벤트 미복원, 보스 타격별 미리보기·offset 편집·좌우 반전·Range 매핑, 고블린/플레이어 호환성을 검증했다.
+- 사망: 비치명 피해, 배회/공격 중 치명타, HP 0/추가 피격 차단, 공격·물리 중단, 재활성화 Dead 유지, 실제 모션 진행·EndDeath 제거를 검증했다.
+- 최종 코루틴 기절: 정상 공격 시 저항 유지, 패링별 저항·게이지 감소, 소진 때만 공격 취소, Death_3 자세 유지 시간, 기절/기상 중 피격, 반복 패링으로 재기절 방지, WakeUp 완료 후 저항·게이지 복구, 기절/기상 중 사망 우선 처리, 사망 후 뒤늦은 복구 없음, 비활성화 시 코루틴 취소, 최종 사망 UI 숨김을 Play로 검증했다.
+- 마지막 코드 검증에서 현재 컴파일 실패 없음·Editor Console 오류/경고 0. Pipeline 버퍼에는 이전 롤백/중간 컴파일 오류가 남아 있으므로 groundTruth의 현재 상태와 구분한다.
+- **인계 직전 읽기 확인: SampleScene / Play 종료 / scene.isDirty=true.** 사용자 편집을 저장·원복하지 않았다. 마지막 검증 후 Run In Background override는 off로 복원했다. 이번 인계에서는 새 Play 검증을 하지 않았다.
+- `main`, 스테이징 없음, 커밋·푸시 없음. 왕 에셋팩·Boss 코드·클립·데이터·프리팹·새 에디터·UI 등이 미추적이다. 기존 골렘 삭제, TMP fallback, Goblin.prefab, SampleScene, Monster/Player 코드, Hit_Spark 메타 등 사용자 변경도 섞여 있다. 별도 정리하지 않는다.
+- Git 소유권 경고는 `git -c safe.directory=D:/GitHub/Parry ...`로 명령마다 처리한다. 전역 설정은 바꾸지 않았다.
+- Unity는 `--project-path D:/GitHub/Parry`를 명시한다. Editor 6000.6.7f1 / port 37800. CLI 업데이트는 사용자 승인 없이 하지 않았다. recompile 직후 socket hang up/오래된 compilationFailed 값이 보이면 실제 Editor ready와 Console groundTruth를 확인한다.
+- `Temp/KingFlinchVerification.txt`, `KingDeathVerification.txt`, `KingComboTellVerification.txt` 등에 해당 검증 결과가 있다. Temp의 Setup/Migrate 스크립트는 **설정 도구**이지 읽기 도구가 아니며 재실행하지 않는다. `VerifyKingMainSub`, 일부 옛 VerifyEmbeddedBossRuntime 등은 폐기된 API를 참조할 수 있다. 사용 전 현재 코드와 대조한다.
+- 폐기한 Main/Sub 클립·데이터는 참조가 없음을 확인한 뒤 정리했고 이전 파일은 `Temp/BossClipsBeforeEmbedded`, `Temp/BossDataBeforeEmbedded`에 백업했다. 피벗 이전 메타 백업은 `Temp/KingPivotsBeforeFeet`다. 백업을 현재 구현으로 복원하지 않는다.
+
+## 현재 구현과 대화 — 2026-11-19 왕 보스 배회 구현·구조 최종 합의
+
+이 절과 실제 최신 파일이 아래 모든 이전 인계 및 BOSS-DESIGN.md의 중간 구현 기록보다 우선한다. 이번 인계에서는 문서만 수정했고 런타임 코드·씬·에셋·Git 커밋은 변경하지 않았다.
+
+### 다음 세션 시작과 작업 범위
+
+1. 먼저 실제 코드와 Git 작업 트리를 확인한다. main에 사용자 수정·삭제·미추적 파일이 많다. 임의 정리·커밋·푸시하지 않는다.
+2. 일반 몬스터와 플레이어는 사용자가 완료했다고 선언한 범위다. 현재 다음 개발 대상은 왕 보스이며, 한 단계씩 구현·설명·확인하는 방식을 원한다.
+3. 왕은 현재 임시 HP·플레이어 피격과 배회까지만 구현됐다. 감지·추적이 다음의 자연스러운 단계지만, 이번 최종 요청은 인계이므로 후속 지시를 받고 진행한다. 전투 시스템 전체를 한 번에 구현하지 않는다.
+4. 구조 논의가 길어지며 에이전트가 상속·인터페이스·중복 허용 사이에서 설명을 반복해 사용자가 매우 답답해했다. **최종 합의는 지금은 일반 몬스터와 보스의 구체적인 Brain·State를 분리하는 방향이다.** 인터페이스로 행동 조합, 델리게이트 전이, SetNextState, 공유 WanderBehaviour, 전이 그래프 등 중간 제안을 구현 합의로 해석하지 않는다.
+
+### 최종 합의한 클래스 구조 — 구현됨
+
+- `Assets/Scripts/Brain.cs`: `namespace Parry`, `abstract class Brain : MonoBehaviour`. private readonly MonsterStateMachine 인스턴스, State 조회, ChangeState, Update의 현재 상태 Tick, OnDisable의 Clear만 담당한다. timeScale==0이면 Tick하지 않는다. 이동·감지·특정 초기 상태를 강제하지 않는다.
+- `MonsterBrain : Brain`: 기존 컴포넌트 초기화, 상태 생성, 배회 시작, 감지·공격·전투 종료 판단을 유지한다. OnDisable에서 base.OnDisable 후 movement.Stop. 기존 MonsterWanderState는 MonsterBrain을 직접 받고 감지하면 MonsterChaseState로 직접 전이한다.
+- `BossBrain : Brain`: 별도의 보스 상태 구성. 현재는 MonsterMovement 초기화와 BossWanderState 생성, OnEnable의 배회 진입, OnDisable의 base 정리+이동 정지만 담당한다. **별도 BossBrain.Update는 없다.** 추후 HP 0 판단은 피해 적용 시점/처형 폭발 완료 시점에 연결할 계획이며 매 프레임 사망 체크를 복원하지 않는다.
+- 공통 FSM 실행 규약은 기존 `IMonsterState`와 `MonsterStateMachine` 그대로다. 보스도 이를 사용하며 Brain마다 FSM 인스턴스를 따로 갖는다. IBossState/BossStateMachine은 없다. 지금 이름 변경·폴더 재편까지 확대하지 않는다.
+- 구체적인 일반 몬스터/보스 상태는 독립적으로 작성한다. 일부 배회 코드 중복을 허용한다. 이동·감지·애니메이션 재생 같은 기능 컴포넌트는 재사용할 수 있다. 고정형 같은 미래 사례는 논의 예시일 뿐 구현 요청이 아니다.
+
+### 왕 에셋·클립·피격 — 구현됨
+
+- 사용 에셋은 `Assets/AssetStoreImport/Medieval King Pack 2`. 보스를 골렘으로 확정했던 적은 없다. 사용자가 SampleScene에 `Boss_King`을 추가했고 `Assets/Prefabs/Monster/Boss_King.prefab`을 사용한다.
+- 에셋팩 클립을 `Assets/Animations/Boss/King`에 복사했다: Idle→King_Idle, Run→King_Walk(원본 Walk 없음), Death→King_Dead. 사용자가 이후 Idle/Walk 클립과 KingController.controller의 전환을 직접 편집했다. 덮어쓰거나 복사 도구를 재실행하지 않는다.
+- `Assets/Scripts/Boss/Boss.cs`: Monster와 독립적인 MonoBehaviour. 임시 maxHp=500, Awake에서 hp 초기화. TakeDamage(ref MonsterHitContext)가 직접 피해를 적용하고 DamageNumberSpawner로 기존 피해 숫자를 표시한다. HP는 0 아래로 내려가지 않고 HP 0이면 추가 피격을 받지 않는다. 아직 사망 상태·처형·저장 피해·기절·페이즈는 연결하지 않았다.
+- `Assets/Scripts/Combat/ICombatTarget.cs`: CanTakeDamage와 TakeDamage(ref MonsterHitContext)의 공통 피격 접점. Monster와 Boss가 구현한다. PlayerAttack은 GetComponentInParent<ICombatTarget>()과 HashSet<ICombatTarget>으로 중복 타격을 막는다. 기존 콤보·치명타·3타 이펙트·적중 피드백은 유지한다.
+- Monster의 기존 피해·기절·처형·사망 구조는 유지된다. Monster가 MonsterBrain을 직접 참조해 상태를 바꾸는 기존 경로다. 전투 요청 이벤트 구조는 롤백됐으므로 복원하지 않는다.
+
+### 왕 배회 — 현재 실제 구현
+
+- `Assets/Scripts/Boss/BossBrain.cs`, `BossWanderState.cs`, `BossPhaseData.cs`.
+- BossWanderState는 BossBrain을 직접 받는다. 진입 위치를 중심으로 대기→반경 내 랜덤 목적지→이동→도착/시간 초과/벽·낭떠러지에서 정지→대기를 반복한다. **현재 Sensor·타겟 감지·ChaseState는 없다.** 일반 몬스터처럼 추적시키려는 후속 의도는 있지만 이번 구현은 배회까지만이다.
+- BossPhaseData는 ScriptableObject이며 현재 moveSpeed, groundLayers, MonsterWanderSettings만 보유한다. 기존 몬스터 설정 구조체를 재사용한다. 공통 데이터 인터페이스는 없다.
+- `Assets/Data/Boss/King_Phase1.asset`: 실제 확인값 speed2 / groundLayers1 / radius3 / wait1 / timeout3 / arrival0.1. HP는 아직 이 에셋이 아니라 Boss의 임시 필드다. 이후 사용자 값이 우선한다.
+- Boss_King 프리팹에 BossBrain·MonsterMovement·Rigidbody2D와 데이터 참조를 연결했다. 기존 BoxCollider2D의 크기는 유지하고 Trigger=false로 바꿔 지면과 충돌한다. Rigidbody는 dynamic/gravity1/회전 고정. 기존 Animator·AnimationClipPlayer는 보존했다. MonsterMovement가 Animator의 Speed를 갱신해 사용자가 만든 Idle/Walk 전환을 사용한다.
+
+### 보스 전투 설계 합의 — 대부분 미구현
+
+- 자세한 합의는 `BOSS-DESIGN.md`의 확정 사항을 참조한다. 구현 현황에는 롤백 기록이 있으므로 현재 파일과 이 인계를 우선한다.
+- 2개 페이즈가 각각 체력을 가진다. 패턴은 사용자가 직접 구현한다. 2페이즈는 기존 패턴 강화(발사체 추가 등)+새 연속 공격. 연속 동작은 한 클립 안에 넣고 동작 사이 이벤트로 플레이어 방향을 향한다.
+- 거리·쿨타임을 만족하는 패턴 중 랜덤 선택. 직전 패턴 반복 제외 규칙은 넣지 않는다.
+- 패링은 피해 방어+기절 저항 감소. 남은 저항이 있으면 연계 유지, 소진되면 공격 취소+기절. 기절 회복 모션 중 피격 가능, 모션 종료 때 저항 복구. 회복 후 Idle에 들어가되 별도 대기 없이 다음 전이 허용.
+- 보스도 처형 가능. 처형 폭발을 모두 출력한 후 사망 판단. 다음 페이즈가 있으면 전환, 없으면 DeadState다. 별도의 1페이즈 처형 규칙으로 복잡하게 분기하지 않는다.
+- 전환은 쓰러지면서 timeScale0→대사(설정한 실제 시간 후 자동 종료)→일어나며 다음 체력 충전→Idle·무적 해제·timeScale1. 전환 클립은 시간 정지에도 진행하는 Playable Clip 방식. 남은 저장 피해는 다음 페이즈로 넘기지 않고 초기화한다. 플레이어 버서커 상태는 유지한다.
+- 입장은 텔레포트 구역의 입장/취소 선택 UI. 이동 완료 후 AI·보스 UI 활성화. 전투 중 귀환 불가, 처치 후 귀환 허용. 최종 사망 모션·UI 숨김·완료 이벤트까지 연결하고 완료 화면/재도전/씬 전환은 후속 범위다.
+- 보스도 배회·감지·추적·거리 초과 배회 복귀를 원한다. 과거 ‘보스 배회 없음/추적 해제 없음’ 설명은 철회됐다.
+- 기절 불가 고블린, 초식동물, 고정형 보스 등은 구조 설명용 가정이다. flinch.enabled/canFlinch 및 행동 인터페이스는 **제안만 했고 구현·도입 합의하지 않았다.** 임의로 추가하지 않는다.
+
+### 롤백 이력과 주의
+
+- 첫 보스 FSM 구현 후 공통 EnemyBrain, IBossState/BossStateMachine, EnemyNavigation, IEnemyBrainData, Func<bool> 전이, 전투 요청 이벤트까지 확대했다가 사용자가 전부 롤백을 요청했다. 해당 코드·데이터·도구는 제거했다.
+- 롤백 후 최소 추상 Brain만 추출하고, BossBrain·BossWanderState·BossPhaseData를 별도로 다시 구현한 것이 현재 상태다. 이름이 같은 옛 BossPhaseData/테스트 도구의 가정은 현재와 다르다.
+- 사용자가 계속 실제 코드를 편집한다. 최근 BossWanderState의 메서드 배치·표현식 변경도 읽기 확인했다. 스타일을 임의로 원복하지 않는다.
+- 사용자 Monster.Initialize는 초기 hp/maxHp/저항/저장값을 직접 대입하는 버전이다. 예전 StopAllCoroutines/초기 UI 이벤트/Reset 호출을 복원하지 않는다. MonsterWanderState의 사용자 공백 편집 등도 보존했다.
+- 기존 UI 구독 방식, 첫 Init 선행 Unbind 추가 금지, 필수 참조에 불필요한 fallback 금지, 기존 철자 보존, Tilemap 선호는 아래 인계의 지침을 계속 따른다.
+
+### 검증·Git·도구 상태
+
+- 보스 피격 Play 검증: 실제 PlayerAttack.ApplyAttackHit 경로 HP 감소·중복 이벤트 차단·HP 0 처리 통과. 피해 숫자는 치명타·난수에 따라 달라진다.
+- 최소 Brain 추출: 컴파일 오류/경고0, 상속된 Tick·시간 정지·동일 상태 재진입 방지·OnDisable Exit/Clear·몬스터 이동 정지·배회 재진입 통과.
+- 현재 분리된 Boss 배회: 컴파일 통과, 격리된 테스트 지형에서 초기 대기·반경 내 실제 이동·Speed 기반 Walk/Idle·비활성화/재활성화 통과. 마지막 검증 후 Play 종료 및 Run In Background 복원. **이번 인계에서는 새 Play 검증이나 Editor 상태 조회를 하지 않았다.** 다음 세션에 실제 상태를 다시 확인한다.
+- `Temp/VerifyBrainBase.cs`, `Temp/SetupBossWander.cs`는 수동 검증/설정 도구이며 Assets 밖이다. Setup 재실행은 프리팹을 다시 저장하므로 읽기 확인용으로 실행하지 않는다. AgentScripts/SetupBossHit 역시 옛 Trigger 설정으로 되돌릴 수 있으므로 재실행 금지.
+- Git main. 골렘 애니메이션 폴더 삭제, SampleScene, TMP fallback, 기존 Monster/Player 스크립트 변경과 미추적 왕 에셋팩·프리팹·클립·Boss 코드·Brain·피격 인터페이스·문서 등이 있다. 골렘 삭제도 사용자 변경이므로 복원하지 않는다. git status에 일부 복구 파일이 M으로 남아도 실제 diff가 비어 있을 수 있다.
+- Git은 이 환경에서 소유권 경고가 나므로 명령별 `git -c safe.directory=D:/GitHub/Parry ...`를 사용했다. 전역 설정은 바꾸지 않았다. 이번 대화에서 커밋·푸시하지 않았다.
+- Unity CLI는 `--project-path D:/GitHub/Parry`를 명시한다. 샌드박스에서는 Editor 검색 파일 읽기가 막혀 적절한 실행 권한이 필요했다. Editor는6000.6.7f1/port37800 이력. CLI1.0.0-beta.14→1.0.1 업데이트는 사용자 승인 없이 하지 않았다. 런타임 코드 변경 시 컴파일·필요한 동작 확인 후 Play를 종료한다.
 
 ## 현재 구현과 대화 — 2026-11-18 보스 제작 전 최종 인계
 

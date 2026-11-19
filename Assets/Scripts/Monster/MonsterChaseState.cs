@@ -27,6 +27,7 @@ namespace Parry.MonsterClass
             if (brain.TryStartAttack())
                 return;
 
+            //추적중..
             brain.Movement.Face(brain.LastSeenPosition.x);
             
             float distance = brain.LastSeenPosition.x - brain.Movement.Position.x;

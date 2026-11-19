@@ -107,7 +107,9 @@ namespace Parry.PlayerClass
 
             if (parry.TryParryHit())
             {
-                parry.PlaySuccessEffects(context.Attacker.transform.position);
+                Bounds bounds = context.Attacker.transform.GetComponent<Collider2D>().bounds;
+                Vector3 parryHitPosition = new Vector3(bounds.center.x, bounds.max.y, bounds.center.z);
+                parry.PlaySuccessEffects(parryHitPosition);
                 
                 MonsterHitContext counterContext =
                     Stats.CreateMonsterHit(Stats.ParryCounterDamage, PlayerAttackType.ParryCounter);

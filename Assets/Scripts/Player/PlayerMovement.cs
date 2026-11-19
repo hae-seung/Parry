@@ -48,6 +48,19 @@ namespace Parry.PlayerClass
             groundFilter.useTriggers = false;
         }
 
+        public void Teleport(Vector2 position)
+        {
+            horizontalInput = 0f;
+            jumpRequested = false;
+            knockbackSpeed = 0f;
+            knockbackDuration = 0f;
+            body.linearVelocity = Vector2.zero;
+            body.angularVelocity = 0f;
+            body.position = position;
+            transform.position = new Vector3(position.x, position.y, transform.position.z);
+            IsGrounded = false;
+        }
+
         internal void Move(float horizontal) => horizontalInput = horizontal;
         internal void Jump() => jumpRequested = true;
         internal void CancelJump() => jumpRequested = false;

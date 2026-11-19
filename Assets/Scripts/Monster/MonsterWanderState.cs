@@ -51,7 +51,6 @@ namespace Parry.MonsterClass
             
             
             // 대기가 끝났으므로 배회 중심의 반경 안에서 다음 목적지를 고른다.
-            
             destinationX = centerX + Random.Range(-settings.radius, settings.radius);
             if (!CanStartWalking())
             {

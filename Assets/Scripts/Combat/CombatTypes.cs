@@ -1,5 +1,6 @@
 using Parry.MonsterClass;
 using Parry.PlayerClass;
+using Parry.BossClass;
 
 namespace Parry.CombatClass
 {
@@ -13,7 +14,7 @@ namespace Parry.CombatClass
     public struct AttackHitContext
     {
         public float Damage { get; }
-        public Monster Attacker { get; }
+        public ICombatTarget Attacker { get; }
         public MonsterAttackType AttackType { get; }
         public bool CanKnockback { get; }
         public float KnockbackDistance { get; }
@@ -21,7 +22,7 @@ namespace Parry.CombatClass
         public int AttackDirection { get; }
 
         
-        public AttackHitContext(MonsterAttackData attackData, Monster attacker, int attackDirection)
+        public AttackHitContext(MonsterAttackData attackData, ICombatTarget attacker, int attackDirection)
         {
             Damage = attackData.Damage;
             Attacker = attacker;
@@ -29,6 +30,17 @@ namespace Parry.CombatClass
             CanKnockback = attackData.CanKnockback;
             KnockbackDistance = attackData.KnockbackDistance;
             CausesFaint = attackData.CausesFaint;
+            AttackDirection = attackDirection;
+        }
+
+        public AttackHitContext(BossAttackHitData hitData, ICombatTarget attacker, int attackDirection)
+        {
+            Damage = hitData.Damage;
+            Attacker = attacker;
+            AttackType = hitData.AttackType;
+            CanKnockback = hitData.CanKnockback;
+            KnockbackDistance = hitData.KnockbackDistance;
+            CausesFaint = hitData.CausesFaint;
             AttackDirection = attackDirection;
         }
     }

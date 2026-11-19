@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Parry.MonsterClass;
 using Parry.PlayerClass;
+using Parry.BossClass;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
 using UnityEditor.UIElements;
@@ -17,6 +18,13 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
     private bool movePreview;
     private bool previewFacingLeft;
     private readonly List<ScriptableObject> attacks = new List<ScriptableObject>();
+    private readonly List<AnimationClip> attackClips = new List<AnimationClip>();
+    private readonly List<float> hitEventTimes = new List<float>();
+    private readonly List<ScriptableObject> rangeAttacks = new List<ScriptableObject>();
+    private ScriptableObject selectedRangeAttack;
+    private bool showAttackRange = true;
+    private AnimationClip selectedClip;
+    private float selectedHitTime;
     private readonly BoxBoundsHandle hitboxHandle = new BoxBoundsHandle();
     private ScriptableObject selectedAttack;
     private bool ownsAnimationMode;
@@ -33,6 +41,9 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
     private Vector2Field offsetField;
     private Vector2Field sizeField;
     private Vector3Field previewPositionField;
+    private VisualElement rangeControls;
+    private FloatField rangeField;
+    private Label rangeConditionLabel;
 
     [MenuItem("Tools/Parry/Attack Preview")]
     public static void Open()
@@ -83,6 +94,7 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         attackField = new DropdownField("편집할 공격");
         attackField.RegisterValueChangedCallback(_ => SelectAttack(attackField.index));
         rootVisualElement.Add(attackField);
+        rootVisualElement.Add(new Button(() => SetSource(source)) { text = "공격 목록 새로고침" });
 
         playButton = new Button(TogglePlayback) { text = "재생" };
         rootVisualElement.Add(playButton);
@@ -116,6 +128,21 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         });
         rootVisualElement.Add(moveToggle);
 
+        rangeControls = new VisualElement();
+        var rangeToggle = new Toggle("공격 Range 표시") { value = showAttackRange };
+        rangeToggle.RegisterValueChangedCallback(evt =>
+        {
+            showAttackRange = evt.newValue;
+            SceneView.RepaintAll();
+        });
+        rangeControls.Add(rangeToggle);
+        rangeField = new FloatField("Attack Range") { isDelayed = true };
+        rangeField.RegisterValueChangedCallback(evt => WriteRange(evt.newValue));
+        rangeControls.Add(rangeField);
+        rangeConditionLabel = new Label();
+        rangeControls.Add(rangeConditionLabel);
+        rootVisualElement.Add(rangeControls);
+
         offsetField = new Vector2Field("Hitbox Offset");
         offsetField.RegisterValueChangedCallback(evt => WriteHitbox(evt.newValue, SelectedHitboxSize));
         sizeField = new Vector2Field("Hitbox Size");
@@ -126,8 +153,10 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         {
             if (selectedAttack != null)
                 AssetDatabase.SaveAssetIfDirty(selectedAttack);
+            if (selectedRangeAttack != null && selectedRangeAttack != selectedAttack)
+                AssetDatabase.SaveAssetIfDirty(selectedRangeAttack);
         }) { text = "공격 데이터 저장" });
-        var help = new Label("캐릭터 이동을 켜면 Scene 화살표로 미리보기 캐릭터를 옮깁니다. 끄면 공격 판정 위치와 크기를 조절합니다. 판정 변경은 선택한 공격 데이터에 적용됩니다.");
+        var help = new Label("주황 원은 캐릭터 원점 기준 공격 선택 거리, 청록 박스는 실제 타격 범위입니다. 캐릭터 이동을 켜면 Scene 화살표로 캐릭터를 옮기고, 끄면 판정 위치와 크기를 조절합니다.");
         help.AddToClassList("attack-preview-help");
         rootVisualElement.Add(help);
         statusLabel = new Label();
@@ -146,16 +175,20 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         SetSource(initial);
     }
 
-    private AnimationClip SelectedClip => selectedAttack is MonsterAttackData monsterAttack
-        ? monsterAttack.AnimationClip : (selectedAttack as PlayerAttackData)?.AnimationClip;
+    private AnimationClip SelectedClip => selectedClip;
 
     private Vector2 SelectedHitboxOffset => selectedAttack is MonsterAttackData monsterAttack
-        ? monsterAttack.HitboxOffset : selectedAttack is PlayerAttackData playerAttack ? playerAttack.HitboxOffset : Vector2.zero;
+        ? monsterAttack.HitboxOffset : selectedAttack is PlayerAttackData playerAttack ? playerAttack.HitboxOffset
+        : selectedAttack is BossAttackHitData bossHit ? bossHit.HitboxOffset : Vector2.zero;
 
     private Vector2 SelectedHitboxSize => selectedAttack is MonsterAttackData monsterAttack
-        ? monsterAttack.HitboxSize : selectedAttack is PlayerAttackData playerAttack ? playerAttack.HitboxSize : Vector2.zero;
+        ? monsterAttack.HitboxSize : selectedAttack is PlayerAttackData playerAttack ? playerAttack.HitboxSize
+        : selectedAttack is BossAttackHitData bossHit ? bossHit.HitboxSize : Vector2.zero;
 
     private float FrameDuration => SelectedClip != null ? 1f / SelectedClip.frameRate : 0.1f;
+
+    private float SelectedRange => selectedRangeAttack != null
+        ? new SerializedObject(selectedRangeAttack).FindProperty("range").floatValue : 0f;
 
     private void SetSource(GameObject value)
     {
@@ -163,6 +196,9 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         source = value;
         hasPreviewPosition = false;
         attacks.Clear();
+        attackClips.Clear();
+        hitEventTimes.Clear();
+        rangeAttacks.Clear();
         var names = new List<string>();
         if (source != null && source.TryGetComponent<MonsterBrain>(out var monster) && monster.Data != null)
         {
@@ -171,7 +207,34 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
                 if (attack == null)
                     continue;
                 attacks.Add(attack);
+                attackClips.Add(attack.AnimationClip);
+                hitEventTimes.Add(-1f);
+                rangeAttacks.Add(attack);
                 names.Add(attack.name);
+            }
+        }
+        else if (source != null && source.TryGetComponent<BossBrain>(out var boss) && boss.Data != null)
+        {
+            foreach (BossAttackData attack in boss.Data.Attacks)
+            {
+                if (attack == null || attack.AnimationClip == null)
+                    continue;
+                if (!EditorApplication.isPlayingOrWillChangePlaymode)
+                    Parry.EditorClass.BossAttackClipEvents.EnsureHitData(attack.AnimationClip);
+                int hitNumber = 0;
+                foreach (AnimationEvent animationEvent in AnimationUtility.GetAnimationEvents(attack.AnimationClip))
+                {
+                    if (animationEvent.functionName != nameof(BossAttack.ApplyAttackHit))
+                        continue;
+                    hitNumber++;
+                    if (!(animationEvent.objectReferenceParameter is BossAttackHitData hit))
+                        continue;
+                    attacks.Add(hit);
+                    attackClips.Add(attack.AnimationClip);
+                    hitEventTimes.Add(animationEvent.time);
+                    rangeAttacks.Add(attack);
+                    names.Add($"{attack.name} · 타격 {hitNumber} ({animationEvent.time:0.###}초)");
+                }
             }
         }
         else if (source != null && source.TryGetComponent<PlayerAttack>(out var player))
@@ -187,6 +250,9 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
                     if (attack == null)
                         continue;
                     attacks.Add(attack);
+                    attackClips.Add(attack.AnimationClip);
+                    hitEventTimes.Add(-1f);
+                    rangeAttacks.Add(null);
                     names.Add(attack.name);
                 }
             }
@@ -200,10 +266,13 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
     {
         StopPreview();
         selectedAttack = index >= 0 && index < attacks.Count ? attacks[index] : null;
-        previewTime = 0f;
+        selectedRangeAttack = selectedAttack != null ? rangeAttacks[index] : null;
+        selectedClip = selectedAttack != null ? attackClips[index] : null;
+        selectedHitTime = selectedAttack != null ? hitEventTimes[index] : -1f;
+        previewTime = Mathf.Max(0f, selectedHitTime);
         if (selectedAttack == null || SelectedClip == null || source == null)
         {
-            statusLabel.text = "씬의 플레이어 또는 몬스터와 공격 클립을 지정해 주세요.";
+            statusLabel.text = "플레이어·몬스터·보스를 지정해 주세요. 보스 클립에는 ApplyAttackHit 이벤트가 필요합니다.";
             RefreshHitboxFields();
             return;
         }
@@ -275,6 +344,11 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
     {
         if (SelectedClip == null)
             return;
+        if (selectedAttack is BossAttackHitData)
+        {
+            SetTime(selectedHitTime);
+            return;
+        }
         foreach (AnimationEvent animationEvent in AnimationUtility.GetAnimationEvents(SelectedClip))
         {
             if (animationEvent.functionName == nameof(MonsterAttack.ApplyAttackHit))
@@ -326,6 +400,15 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
         if (preview == null || selectedAttack == null || EditorApplication.isPlayingOrWillChangePlaymode)
             return;
         Vector3 origin = preview.transform.position;
+        if (showAttackRange && selectedRangeAttack != null)
+        {
+            Color previousColor = Handles.color;
+            Handles.color = new Color(1f, 0.65f, 0.15f);
+            float range = SelectedRange;
+            Handles.DrawWireDisc(origin, Vector3.forward, range);
+            Handles.Label(origin + Vector3.right * range, $"Attack Range {range:0.##}");
+            Handles.color = previousColor;
+        }
         int direction = previewRenderer.flipX ? -1 : 1;
         Vector3 center = GetHitboxCenter();
         hitboxHandle.axes = PrimitiveBoundsHandle.Axes.X | PrimitiveBoundsHandle.Axes.Y;
@@ -395,7 +478,26 @@ public sealed class MonsterAttackPreviewWindow : EditorWindow
             offsetField.SetValueWithoutNotify(SelectedHitboxOffset);
             sizeField.SetValueWithoutNotify(SelectedHitboxSize);
         }
+        rangeControls.style.display = selectedRangeAttack != null ? DisplayStyle.Flex : DisplayStyle.None;
+        if (selectedRangeAttack != null)
+        {
+            rangeField.SetValueWithoutNotify(SelectedRange);
+            var data = new SerializedObject(selectedRangeAttack);
+            bool withinRange = data.FindProperty("distanceCondition").enumValueIndex ==
+                (int)MonsterAttackDistanceCondition.WithinRange;
+            rangeConditionLabel.text = withinRange ? "원 안(경계 포함)에서 공격 선택 가능" : "원 밖에서 공격 선택 가능";
+        }
         SceneView.RepaintAll();
+    }
+
+    private void WriteRange(float range)
+    {
+        if (selectedRangeAttack == null)
+            return;
+        var data = new SerializedObject(selectedRangeAttack);
+        data.FindProperty("range").floatValue = Mathf.Max(0f, range);
+        data.ApplyModifiedProperties();
+        RefreshHitboxFields();
     }
 
     private void OnPlayModeChanged(PlayModeStateChange state)

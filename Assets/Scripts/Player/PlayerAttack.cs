@@ -15,7 +15,7 @@ namespace Parry.PlayerClass
 
         private PlayerAttackSetData data;
 
-        private readonly HashSet<Monster> hitTargetSet = new HashSet<Monster>();
+        private readonly HashSet<ICombatTarget> hitTargetSet = new HashSet<ICombatTarget>();
         private readonly List<Collider2D> hitResults = new List<Collider2D>(16);
         private ContactFilter2D hitFilter;
 
@@ -133,9 +133,9 @@ namespace Parry.PlayerClass
 
             foreach (Collider2D hit in hitResults)
             {
-                Monster target = hit.GetComponent<Monster>();
+                ICombatTarget target = hit.GetComponentInParent<ICombatTarget>();
                 
-                if (target == null || !target.isActiveAndEnabled || target.IsDead || target.IsExecuting || !hitTargetSet.Add(target))
+                if (target == null || !target.CanTakeDamage || !hitTargetSet.Add(target))
                     continue;
                 
                 MonsterHitContext hitContext = character.Stats.CreateMonsterHit(damage, PlayerAttackType.Normal);
